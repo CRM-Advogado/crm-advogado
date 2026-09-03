@@ -1,0 +1,77 @@
+{
+  "_leia_me": "TROQUE os nomes abaixo pelos que existem na SUA conta antes de subir. Como estão, o arquivo é recusado com 'unresolved_reference' — o que também é um teste válido. O jeito rápido de descobrir os nomes certos é clicar em Exportar na tela de automações e olhar o arquivo que sai.",
+  "version": 1,
+  "automations": [
+    {
+      "name": "Teste — Triagem com etiqueta e funil",
+      "description": "Exercita tag, funil, etapa e campo personalizado.",
+      "trigger_type": "keyword_match",
+      "trigger_config": { "keywords": ["bpc", "loas"], "match_type": "contains" },
+      "is_active": false,
+      "steps": [
+        {
+          "step_type": "send_message",
+          "step_config": { "text": "Vi que seu caso é sobre BPC/LOAS. Vou te encaminhar." }
+        },
+        {
+          "step_type": "add_tag",
+          "step_config": { "tag": "TROQUE PELO NOME DE UMA TAG SUA" }
+        },
+        {
+          "step_type": "create_deal",
+          "step_config": {
+            "pipeline": "TROQUE PELO NOME DE UM FUNIL SEU",
+            "stage": "TROQUE PELO NOME DE UMA ETAPA DESSE FUNIL",
+            "title": "BPC — {{ contact.name }}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teste — Atribuir para uma pessoa",
+      "description": "Referência a agente por nome completo ou e-mail.",
+      "trigger_type": "new_contact_created",
+      "trigger_config": {},
+      "is_active": false,
+      "steps": [
+        {
+          "step_type": "assign_conversation",
+          "step_config": {
+            "mode": "specific",
+            "agent": "TROQUE PELO SEU E-MAIL OU NOME COMPLETO"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teste — Condição por etiqueta",
+      "description": "Aqui a tag vai no campo 'tag' e vira o operand da condição.",
+      "trigger_type": "new_message_received",
+      "trigger_config": {},
+      "is_active": false,
+      "steps": [
+        {
+          "step_type": "condition",
+          "step_config": {
+            "subject": "tag_presence",
+            "tag": "TROQUE PELO NOME DE UMA TAG SUA"
+          },
+          "branches": {
+            "yes": [
+              {
+                "step_type": "send_message",
+                "step_config": { "text": "Você já é nosso cliente, seja bem-vindo de volta." }
+              }
+            ],
+            "no": [
+              {
+                "step_type": "send_message",
+                "step_config": { "text": "Seja bem-vindo! Vamos entender seu caso." }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

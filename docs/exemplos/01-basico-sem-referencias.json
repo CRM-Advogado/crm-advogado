@@ -1,0 +1,126 @@
+{
+  "version": 1,
+  "automations": [
+    {
+      "name": "Teste — Boas-vindas",
+      "description": "Primeira mensagem de um contato novo. Não referencia nada da conta.",
+      "trigger_type": "first_inbound_message",
+      "trigger_config": {},
+      "is_active": false,
+      "steps": [
+        {
+          "step_type": "send_message",
+          "step_config": {
+            "text": "Olá! Recebemos sua mensagem e já vamos te responder."
+          }
+        },
+        {
+          "step_type": "wait",
+          "step_config": { "amount": 2, "unit": "minutes" }
+        },
+        {
+          "step_type": "send_message",
+          "step_config": {
+            "text": "Enquanto isso, me conta em poucas palavras qual é o seu caso."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teste — Fora do horário",
+      "description": "Exercita condição com os dois ramos.",
+      "trigger_type": "new_message_received",
+      "trigger_config": {},
+      "is_active": false,
+      "steps": [
+        {
+          "step_type": "condition",
+          "step_config": { "subject": "time_of_day", "operand": "18:00-09:00" },
+          "branches": {
+            "yes": [
+              {
+                "step_type": "send_message",
+                "step_config": {
+                  "text": "Nosso atendimento é das 9h às 18h. Respondemos amanhã cedo."
+                }
+              },
+              {
+                "step_type": "close_conversation",
+                "step_config": {}
+              }
+            ],
+            "no": [
+              {
+                "step_type": "send_message",
+                "step_config": { "text": "Estamos online agora, um instante." }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teste — Menu de botões",
+      "description": "Gatilho por palavra-chave e mensagem interativa.",
+      "trigger_type": "keyword_match",
+      "trigger_config": { "keywords": ["menu", "opções"], "match_type": "contains" },
+      "is_active": false,
+      "steps": [
+        {
+          "step_type": "send_buttons",
+          "step_config": {
+            "kind": "buttons",
+            "body": "Como podemos te ajudar hoje?",
+            "buttons": [
+              { "id": "opt_beneficio", "title": "Benefício do INSS" },
+              { "id": "opt_processo", "title": "Andamento do caso" },
+              { "id": "opt_outro", "title": "Outro assunto" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Teste — Condição aninhada",
+      "description": "Duas condições encaixadas, para conferir a árvore no builder.",
+      "trigger_type": "new_message_received",
+      "trigger_config": {},
+      "is_active": false,
+      "steps": [
+        {
+          "step_type": "condition",
+          "step_config": {
+            "subject": "message_content",
+            "operand": "message_text",
+            "value": "urgente"
+          },
+          "branches": {
+            "yes": [
+              {
+                "step_type": "condition",
+                "step_config": { "subject": "time_of_day", "operand": "09:00-18:00" },
+                "branches": {
+                  "yes": [
+                    {
+                      "step_type": "send_message",
+                      "step_config": { "text": "Entendi que é urgente. Já estamos vendo." }
+                    }
+                  ],
+                  "no": [
+                    {
+                      "step_type": "send_message",
+                      "step_config": {
+                        "text": "Anotei a urgência. Assim que abrirmos, é a primeira coisa."
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            "no": []
+          }
+        }
+      ]
+    }
+  ]
+}

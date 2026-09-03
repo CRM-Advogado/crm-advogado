@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "automations": [
+    {
+      "name": "Erro — gatilho inexistente",
+      "trigger_type": "quando_der_na_telha",
+      "steps": [{ "step_type": "send_message", "step_config": { "text": "oi" } }]
+    },
+    {
+      "name": "Erro — passo inexistente",
+      "trigger_type": "new_message_received",
+      "steps": [
+        { "step_type": "executar_comando", "step_config": { "cmd": "whoami" } }
+      ]
+    },
+    {
+      "name": "Erro — campos obrigatórios em branco",
+      "trigger_type": "keyword_match",
+      "trigger_config": { "keywords": [] },
+      "steps": [
+        { "step_type": "send_message", "step_config": { "text": "   " } },
+        { "step_type": "wait", "step_config": { "amount": -1, "unit": "séculos" } }
+      ]
+    },
+    {
+      "name": "Erro — tag que não existe",
+      "trigger_type": "new_message_received",
+      "steps": [
+        {
+          "step_type": "add_tag",
+          "step_config": { "tag": "Tag Que Não Existe Nesta Conta" }
+        }
+      ]
+    },
+    {
+      "name": "Erro — id de outra conta",
+      "trigger_type": "new_message_received",
+      "steps": [
+        {
+          "step_type": "add_tag",
+          "step_config": { "tag_id": "11111111-2222-3333-4444-555555555555" }
+        }
+      ]
+    },
+    {
+      "name": "Erro — ramos fora de uma condição",
+      "trigger_type": "new_message_received",
+      "steps": [
+        {
+          "step_type": "send_message",
+          "step_config": { "text": "eu não sou uma condição" },
+          "branches": {
+            "yes": [{ "step_type": "close_conversation", "step_config": {} }],
+            "no": []
+          }
+        }
+      ]
+    },
+    {
+      "name": "Erro — webhook para endereço interno",
+      "trigger_type": "new_message_received",
+      "steps": [
+        {
+          "step_type": "send_webhook",
+          "step_config": { "url": "http://169.254.169.254/latest/meta-data/" }
+        }
+      ]
+    },
+    {
+      "name": "Erro — etapa sem funil",
+      "trigger_type": "deal_stage_changed",
+      "trigger_config": { "to_stage": "Triagem" },
+      "steps": [{ "step_type": "send_message", "step_config": { "text": "oi" } }]
+    },
+    {
+      "name": "Erro — nome repetido",
+      "trigger_type": "new_message_received",
+      "steps": [{ "step_type": "send_message", "step_config": { "text": "primeira" } }]
+    },
+    {
+      "name": "Erro — nome repetido",
+      "trigger_type": "new_message_received",
+      "steps": [{ "step_type": "send_message", "step_config": { "text": "segunda" } }]
+    }
+  ]
+}
