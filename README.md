@@ -172,6 +172,28 @@ rather than here. Details in
 [`CONTRIBUTING.md`](./CONTRIBUTING.md) and
 [`.github/SECURITY.md`](./.github/SECURITY.md).
 
+## Credits
+
+Cérebro CRM is a fork of **[wacrm](https://github.com/ArnasDon/wacrm)**,
+an open-source, self-hostable WhatsApp CRM template created and
+maintained by **[Arnas Donauskas](https://github.com/ArnasDon)**. The
+original project's marketing site and hosted docs live at
+[wacrm.tech](https://wacrm.tech), with source at
+[ArnasDon/wacrm-site](https://github.com/ArnasDon/wacrm-site).
+
+All of the core architecture — the Next.js/Supabase/WhatsApp Business
+API foundation, the inbox, pipelines, broadcasts, and automations
+engine — comes from that upstream project. This fork builds on top of
+it with changes aimed at Brazilian law practices (Cérebro CRM
+branding, generic legal practice-area categories, an MCP server, and
+this fork's own docs in [`docs/`](./docs)), and is distributed under
+the same [MIT license](./LICENSE), which requires keeping the original
+copyright notice — see [LICENSE](./LICENSE) for the full text.
+
+If you're building your own CRM and don't need the law-practice
+adaptations, consider starting from the upstream
+[ArnasDon/wacrm](https://github.com/ArnasDon/wacrm) instead.
+
 ## License
 
 [MIT](./LICENSE). Fork it, brand it, host it.
