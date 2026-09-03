@@ -1,12 +1,12 @@
-# Cérebro CRM — CRM Template for WhatsApp
+# Cérebro CRM — Template de CRM para WhatsApp
 
-> Self-hostable CRM template for WhatsApp® — shared inbox, contacts,
-> sales pipelines, broadcasts, and no-code automations. Fork it, brand
-> it, host it.
+> CRM auto-hospedável para WhatsApp® — caixa de entrada compartilhada,
+> contatos, funis de vendas, disparos em massa e automações no-code.
+> Faça um fork, personalize a marca, hospede.
 
 <p align="center">
   <a href="https://www.hostinger.com/web-apps-hosting">
-    <img src="./.github/assets/hostinger-deploy.png" alt="Ship your Node.js app in one click — Deploy to Hostinger" width="900">
+    <img src="./.github/assets/hostinger-deploy.png" alt="Suba seu app Node.js com um clique — Deploy na Hostinger" width="900">
   </a>
 </p>
 
@@ -16,184 +16,194 @@
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Auth-3ecf8e?logo=supabase)](https://supabase.com)
 [![Stars](https://img.shields.io/github/stars/advmoacirmariz-blip/crm-aberto?style=social)](https://github.com/advmoacirmariz-blip/crm-aberto/stargazers)
 
-Cérebro CRM is a fork of the open-source
-[wacrm](https://github.com/ArnasDon/wacrm) project by Arnas Donauskas,
-adapted and maintained for law practices — clone or fork it to run
-your own CRM. Distributed under the MIT license (see [LICENSE](./LICENSE)).
+Cérebro CRM é um fork do projeto open source
+[wacrm](https://github.com/ArnasDon/wacrm), de Arnas Donauskas,
+adaptado e mantido para escritórios de advocacia — faça um fork ou
+clone para rodar o seu próprio CRM. Distribuído sob a licença MIT
+(veja [LICENSE](./LICENSE)).
 
-## What you get out of the box
+## O que você já recebe pronto
 
-- **Shared inbox** on the official WhatsApp Business API — multiple
-  agents working one number, per-conversation assignment, status, and
-  notes.
-- **Contacts + tags + custom fields**, CSV import, deduplication.
-- **Sales pipelines** (Kanban) with deals linked to conversations.
-- **Broadcasts** with Meta-approved templates, delivery + read
-  tracking, per-recipient variable substitution.
-- **No-code automations** — triggers on inbound messages, new
-  contacts, keywords, or schedule; conditional branches, waits,
-  tags, webhooks. Visual builder.
-- **AI reply assistant** — bring your own OpenAI or Anthropic key
-  (stored encrypted; no per-seat AI fee, your data stays yours).
-  One-click AI-drafted replies in the inbox, plus an optional
-  auto-reply bot with a per-conversation cap and clean human handoff.
-  Add a **knowledge base** (FAQs, policies, product docs) and it
-  answers from your own content — hybrid retrieval (Postgres full-text,
-  or semantic pgvector when an embeddings key is set).
-- **Real-time dashboard** — response times, daily volume, pipeline
-  value, cross-module activity feed.
-- **Team accounts** — invite teammates by link, role-based access
-  (owner / admin / agent / viewer), ownership transfer. Every install
-  is account-scoped, so one shared inbox can be staffed by a whole
-  team. Solo use stays single-user with zero setup.
-- **Account management** — email, password, avatar, global sign-out.
-- **Public REST API** (`/api/v1`) with scoped, revocable API keys —
-  build your own automations on top of your CRM. See
-  [docs/public-api.md](./docs/public-api.md).
-- **MCP server** — drive your CRM from Claude, Cursor, and other AI
-  assistants over the [Model Context Protocol](https://modelcontextprotocol.io).
-  Read-only by default, opt-in writes. See [docs/mcp.md](./docs/mcp.md)
-  (server in [`mcp-server/`](./mcp-server)).
+- **Caixa de entrada compartilhada** na API oficial do WhatsApp
+  Business — vários atendentes trabalhando num único número, atribuição
+  por conversa, status e anotações.
+- **Contatos + etiquetas + campos personalizados**, importação de CSV,
+  deduplicação.
+- **Funis de vendas** (Kanban) com negócios vinculados às conversas.
+- **Disparos em massa** com templates aprovados pela Meta, rastreio de
+  entrega e leitura, substituição de variáveis por destinatário.
+- **Automações no-code** — gatilhos em mensagens recebidas, novos
+  contatos, palavras-chave ou agendamento; ramificações condicionais,
+  esperas, etiquetas, webhooks. Construtor visual.
+- **Assistente de resposta com IA** — use sua própria chave OpenAI ou
+  Anthropic (armazenada criptografada; sem taxa por assento, seus dados
+  continuam seus). Respostas com IA de um clique na caixa de entrada,
+  além de um bot de resposta automática opcional com limite por
+  conversa e transferência limpa para humano. Adicione uma **base de
+  conhecimento** (FAQs, políticas, documentos do produto) e ele responde
+  com base no seu próprio conteúdo — busca híbrida (full-text do
+  Postgres, ou semântica via pgvector quando uma chave de embeddings é
+  configurada).
+- **Painel em tempo real** — tempos de resposta, volume diário, valor
+  do funil, feed de atividade entre módulos.
+- **Contas de equipe** — convide colegas por link, acesso por papel
+  (dono / admin / atendente / visualizador), transferência de
+  titularidade. Cada instalação é isolada por conta, então uma única
+  caixa de entrada compartilhada pode ser operada por uma equipe
+  inteira. Uso individual continua sendo single-user, sem configuração
+  extra.
+- **Gestão de conta** — e-mail, senha, avatar, logout global.
+- **API REST pública** (`/api/v1`) com chaves de API com escopo e
+  revogáveis — construa suas próprias automações em cima do seu CRM.
+  Veja [docs/public-api.md](./docs/public-api.md).
+- **Servidor MCP** — controle seu CRM a partir do Claude, Cursor e
+  outros assistentes de IA via [Model Context Protocol](https://modelcontextprotocol.io).
+  Somente leitura por padrão, escrita opcional. Veja
+  [docs/mcp.md](./docs/mcp.md) (servidor em [`mcp-server/`](./mcp-server)).
 
-## Why fork this?
+## Por que fazer um fork disso?
 
-This is a **template**, not a product. Forking means you get:
+Isto é um **template**, não um produto. Fazer um fork significa que
+você tem:
 
-- **Full ownership** — your code, your Supabase project, your domain,
-  your data. No SaaS lock-in, no seat pricing, no trust dance.
-- **Full customisation** — add the fields your team needs, remove the
-  modules you don't, redesign anything. The stack is boring on
-  purpose (Next.js + Supabase + Tailwind) so the learning curve is
-  short.
-- **Zero ops to start** — [Hostinger](https://www.hostinger.com/web-apps-hosting)
-  Managed Node.js deploys a fork in a few clicks. No Docker, no
-  Kubernetes, no infra team needed.
-  ([See below ↓](#-deploy-on-hostinger-recommended))
-- **Real security primitives** — token encryption (AES-256-GCM), RLS
-  on every table, HMAC-verified webhooks, CSP, rate limiting, CI
-  typecheck/build on every PR.
+- **Posse total** — seu código, seu projeto Supabase, seu domínio, seus
+  dados. Sem lock-in de SaaS, sem cobrança por assento, sem depender de
+  confiar em terceiros.
+- **Customização total** — adicione os campos que sua equipe precisa,
+  remova os módulos que não usa, redesenhe o que quiser. O stack é
+  propositalmente "chato" (Next.js + Supabase + Tailwind), então a
+  curva de aprendizado é curta.
+- **Zero operação para começar** — a [Hostinger](https://www.hostinger.com/web-apps-hosting)
+  Managed Node.js publica um fork em poucos cliques. Sem Docker, sem
+  Kubernetes, sem precisar de time de infra.
+  ([Veja abaixo ↓](#-deploy-na-hostinger-recomendado))
+- **Segurança de verdade** — criptografia de tokens (AES-256-GCM), RLS
+  em todas as tabelas, webhooks verificados por HMAC, CSP, rate
+  limiting, typecheck/build no CI a cada PR.
 
-Not a framework. Not an SDK. A concrete, working CRM you can stand up
-in an afternoon and make yours.
+Não é um framework. Não é um SDK. É um CRM concreto e funcional que
+você coloca no ar numa tarde e transforma no seu.
 
-## Quick start
+## Começando rápido
 
 ```bash
-# Fork on GitHub first: https://github.com/advmoacirmariz-blip/crm-aberto → Fork
-git clone https://github.com/<your-username>/crm-aberto.git
+# Primeiro faça um fork no GitHub: https://github.com/advmoacirmariz-blip/crm-aberto → Fork
+git clone https://github.com/<seu-usuario>/crm-aberto.git
 cd crm-aberto
 npm install
-cp .env.local.example .env.local   # fill in Supabase + Meta creds
+cp .env.local.example .env.local   # preencha as credenciais do Supabase + Meta
 npm run dev
 ```
 
-Open <http://localhost:3000>. You'll be redirected to `/login` (or
-`/dashboard` if already signed in).
+Abra <http://localhost:3000>. Você será redirecionado para `/login`
+(ou `/dashboard`, se já estiver logado).
 
-## 🚀 Deploy on Hostinger (recommended)
+## 🚀 Deploy na Hostinger (recomendado)
 
 <p align="center">
   <a href="https://www.hostinger.com/web-apps-hosting">
-    <img src="./.github/assets/hostinger-deploy.png" alt="Ship your Node.js app in one click — Deploy to Hostinger" width="1000">
+    <img src="./.github/assets/hostinger-deploy.png" alt="Suba seu app Node.js com um clique — Deploy na Hostinger" width="1000">
   </a>
 </p>
 <p align="center">
   <a href="https://wacrm.tech/docs/deployment-hostinger">
-    <img src="https://img.shields.io/badge/Step--by--step_guide-wacrm.tech%2Fdocs-111?style=for-the-badge" alt="Step-by-step guide" height="44">
+    <img src="https://img.shields.io/badge/Guia_passo_a_passo-wacrm.tech%2Fdocs-111?style=for-the-badge" alt="Guia passo a passo" height="44">
   </a>
 </p>
 
-**Cérebro CRM is built to run on [Hostinger](https://www.hostinger.com/web-apps-hosting).**
-It's the path we test, document, and recommend — and the fastest way
-to get a production-grade CRM live without owning a VPS or a
-Kubernetes cluster.
+**O Cérebro CRM é feito para rodar na [Hostinger](https://www.hostinger.com/web-apps-hosting).**
+É o caminho que testamos, documentamos e recomendamos — e a forma mais
+rápida de colocar um CRM em nível de produção no ar sem precisar de
+uma VPS ou de um cluster Kubernetes.
 
-### Why Hostinger?
+### Por que Hostinger?
 
 | | |
 |---|---|
-| **One-click Git deploy** | Connect your fork, push to `main`, Hostinger builds and ships it. No SSH, no Docker, no CI to wire up — this repo's own `main` deploys this way. |
-| **Managed Node.js** | Next.js 16 (App Router, server actions, ISR) runs out of the box on [Premium, Business, and Cloud](https://www.hostinger.com/web-apps-hosting) shared plans. You don't manage Node versions, processes, or reverse proxies. |
-| **Free SSL + free domain** | Automatic Let's Encrypt on your custom domain (or a free one included with annual plans). HTTPS is on by default — required for the WhatsApp Business webhook. |
-| **Global CDN + LiteSpeed** | Static assets cached at the edge, dynamic routes served from LiteSpeed. Snappy dashboards out of the box, no Cloudflare setup required. |
-| **Env vars + logs in hPanel** | Set `SUPABASE_*`, `WHATSAPP_*`, and `ENCRYPTION_KEY` from the panel — no `.env` on the server. Live application logs in the same UI. |
-| **DDoS protection + daily backups** | Built-in, no add-ons. The webhook endpoint is a public target — having protection at the edge matters. |
-| **Cheaper than a VPS** | Plans start at a few dollars a month — order-of-magnitude less than a comparable managed Node.js host, and you don't pay extra for the database (that's Supabase). |
-| **24/7 human support** | Live chat support in 20+ languages — useful when your CRM is the thing your team relies on to talk to customers. |
+| **Deploy via Git com um clique** | Conecte seu fork, dê push na `main`, a Hostinger builda e publica. Sem SSH, sem Docker, sem CI para configurar — a própria `main` deste repositório faz deploy assim. |
+| **Node.js gerenciado** | Next.js 16 (App Router, server actions, ISR) roda pronto nos planos compartilhados [Premium, Business e Cloud](https://www.hostinger.com/web-apps-hosting). Você não gerencia versão do Node, processos ou proxy reverso. |
+| **SSL grátis + domínio grátis** | Let's Encrypt automático no seu domínio próprio (ou um grátis incluso nos planos anuais). HTTPS ligado por padrão — obrigatório para o webhook do WhatsApp Business. |
+| **CDN global + LiteSpeed** | Assets estáticos em cache na borda, rotas dinâmicas servidas pelo LiteSpeed. Painéis rápidos de fábrica, sem precisar configurar Cloudflare. |
+| **Variáveis de ambiente e logs no hPanel** | Configure `SUPABASE_*`, `WHATSAPP_*` e `ENCRYPTION_KEY` pelo painel — sem `.env` no servidor. Logs da aplicação ao vivo na mesma interface. |
+| **Proteção contra DDoS + backups diários** | Incluído, sem complementos. O endpoint do webhook é um alvo público — ter proteção na borda importa. |
+| **Mais barato que uma VPS** | Planos a partir de poucos dólares por mês — uma ordem de grandeza mais barato que um host Node.js gerenciado comparável, e você não paga a mais pelo banco de dados (isso é o Supabase). |
+| **Suporte humano 24/7** | Chat ao vivo em mais de 20 idiomas — útil quando seu CRM é a ferramenta que sua equipe usa para falar com clientes. |
 
-### The 60-second version
+### A versão de 60 segundos
 
-1. **Fork** this repo on GitHub.
-2. In **hPanel → Websites → Create**, pick **Node.js** and connect
-   your fork.
-3. Paste your Supabase + Meta env vars into hPanel.
-4. Push to `main`. Hostinger builds and serves it. Done.
+1. **Faça um fork** deste repositório no GitHub.
+2. No **hPanel → Sites → Criar**, escolha **Node.js** e conecte seu
+   fork.
+3. Cole suas variáveis do Supabase + Meta no hPanel.
+4. Dê push na `main`. A Hostinger builda e publica. Pronto.
 
-Full walkthrough with screenshots:
+Passo a passo completo com capturas de tela:
 **[wacrm.tech/docs/deployment-hostinger](https://wacrm.tech/docs/deployment-hostinger)**.
 
-> _Note: Cérebro CRM is MIT-licensed and runs anywhere Node.js does
-> (Vercel, Railway, your own VPS). Hostinger is recommended, not
-> required._
+> _Nota: o Cérebro CRM é licenciado sob MIT e roda em qualquer lugar
+> onde Node.js roda (Vercel, Railway, sua própria VPS). Hostinger é
+> recomendado, não obrigatório._
 
-## Documentation
+## Documentação
 
-This repo's own docs live in [`docs/`](./docs) — automations import/export,
-the MCP server, the public API, and known architectural invariants.
+A documentação própria deste repositório está em [`docs/`](./docs) —
+importação/exportação de automações, o servidor MCP, a API pública e
+os invariantes arquiteturais conhecidos.
 
-Since Cérebro CRM shares its foundation with the upstream
-[wacrm](https://github.com/ArnasDon/wacrm) project, its general
-self-host guides (Supabase setup, WhatsApp Business API config,
-deployment) mostly still apply here too:
+Como o Cérebro CRM compartilha a base do projeto original
+[wacrm](https://github.com/ArnasDon/wacrm), os guias gerais de
+auto-hospedagem dele (configuração do Supabase, configuração da API do
+WhatsApp Business, deploy) em boa parte continuam válidos aqui também:
 [wacrm.tech/docs](https://wacrm.tech/docs)
-(source: [ArnasDon/wacrm-site](https://github.com/ArnasDon/wacrm-site)).
+(fonte: [ArnasDon/wacrm-site](https://github.com/ArnasDon/wacrm-site)).
 
-Key upstream pages:
-- [Getting started](https://wacrm.tech/docs/getting-started)
-- [Supabase setup](https://wacrm.tech/docs/supabase-setup)
-- [WhatsApp setup](https://wacrm.tech/docs/whatsapp-setup)
-- [Environment variables](https://wacrm.tech/docs/environment-variables)
-- [Deploy on Hostinger](https://wacrm.tech/docs/deployment-hostinger)
-- [Architecture](https://wacrm.tech/docs/architecture)
-- [Troubleshooting](https://wacrm.tech/docs/troubleshooting)
+Páginas principais do projeto original:
+- [Primeiros passos](https://wacrm.tech/docs/getting-started)
+- [Configuração do Supabase](https://wacrm.tech/docs/supabase-setup)
+- [Configuração do WhatsApp](https://wacrm.tech/docs/whatsapp-setup)
+- [Variáveis de ambiente](https://wacrm.tech/docs/environment-variables)
+- [Deploy na Hostinger](https://wacrm.tech/docs/deployment-hostinger)
+- [Arquitetura](https://wacrm.tech/docs/architecture)
+- [Solução de problemas](https://wacrm.tech/docs/troubleshooting)
 
 ## Stack
 
 - **App** — Next.js 16 (App Router), React 19, TypeScript, Tailwind v4.
-- **Data** — Supabase (Postgres + Auth + Storage + RLS).
-- **WhatsApp** — Meta Cloud API (official WhatsApp Business API).
+- **Dados** — Supabase (Postgres + Auth + Storage + RLS).
+- **WhatsApp** — Meta Cloud API (API oficial do WhatsApp Business).
 
-## Contributing
+## Contribuindo
 
-This is a template, not a collaborative product — the expected flow is
-fork → customise → deploy, **not** upstream contribution. Bug reports
-and security issues are welcome; feature PRs often belong in your fork
-rather than here. Details in
-[`CONTRIBUTING.md`](./CONTRIBUTING.md) and
+Isto é um template, não um produto colaborativo — o fluxo esperado é
+fork → customizar → publicar, **não** contribuição para este
+repositório. Relatos de bugs e problemas de segurança são bem-vindos;
+PRs de novas funcionalidades geralmente pertencem ao seu próprio fork.
+Detalhes em [`CONTRIBUTING.md`](./CONTRIBUTING.md) e
 [`.github/SECURITY.md`](./.github/SECURITY.md).
 
-## Credits
+## Créditos
 
-Cérebro CRM is a fork of **[wacrm](https://github.com/ArnasDon/wacrm)**,
-an open-source, self-hostable WhatsApp CRM template created and
-maintained by **[Arnas Donauskas](https://github.com/ArnasDon)**. The
-original project's marketing site and hosted docs live at
-[wacrm.tech](https://wacrm.tech), with source at
+O Cérebro CRM é um fork do **[wacrm](https://github.com/ArnasDon/wacrm)**,
+um template de CRM para WhatsApp open source e auto-hospedável, criado
+e mantido por **[Arnas Donauskas](https://github.com/ArnasDon)**. O
+site e a documentação hospedada do projeto original ficam em
+[wacrm.tech](https://wacrm.tech), com o código-fonte em
 [ArnasDon/wacrm-site](https://github.com/ArnasDon/wacrm-site).
 
-All of the core architecture — the Next.js/Supabase/WhatsApp Business
-API foundation, the inbox, pipelines, broadcasts, and automations
-engine — comes from that upstream project. This fork builds on top of
-it with changes aimed at Brazilian law practices (Cérebro CRM
-branding, generic legal practice-area categories, an MCP server, and
-this fork's own docs in [`docs/`](./docs)), and is distributed under
-the same [MIT license](./LICENSE), which requires keeping the original
-copyright notice — see [LICENSE](./LICENSE) for the full text.
+Toda a arquitetura principal — a base em Next.js/Supabase/API do
+WhatsApp Business, a caixa de entrada, os funis, os disparos em massa e
+o motor de automações — vem daquele projeto original. Este fork
+constrói em cima dela com mudanças voltadas a escritórios de advocacia
+brasileiros (marca Cérebro CRM, categorias genéricas de área de
+atuação jurídica, um servidor MCP e a documentação própria deste fork
+em [`docs/`](./docs)), e é distribuído sob a mesma
+[licença MIT](./LICENSE), que exige manter o aviso de copyright
+original — veja [LICENSE](./LICENSE) para o texto completo.
 
-If you're building your own CRM and don't need the law-practice
-adaptations, consider starting from the upstream
-[ArnasDon/wacrm](https://github.com/ArnasDon/wacrm) instead.
+Se você está construindo seu próprio CRM e não precisa das adaptações
+para advocacia, considere partir direto do projeto original
+[ArnasDon/wacrm](https://github.com/ArnasDon/wacrm).
 
-## License
+## Licença
 
-[MIT](./LICENSE). Fork it, brand it, host it.
+[MIT](./LICENSE). Faça um fork, personalize a marca, hospede.
