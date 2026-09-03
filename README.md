@@ -146,6 +146,12 @@ Passo a passo completo com capturas de tela:
 
 ## Documentação
 
+**Nunca implantou um sistema sozinho? Comece pelo**
+**[guia de implantação passo a passo](./docs/tutoriais/00-comece-aqui.md)**
+**— escrito para quem não é da área técnica**, cobrindo GitHub,
+Supabase, WhatsApp Business (Meta) e Hostinger, um de cada vez, até o
+CRM estar de fato no ar e recebendo mensagens.
+
 A documentação própria deste repositório está em [`docs/`](./docs) —
 importação/exportação de automações, o servidor MCP, a API pública e
 os invariantes arquiteturais conhecidos.

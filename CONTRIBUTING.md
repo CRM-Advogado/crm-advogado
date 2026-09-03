@@ -4,7 +4,7 @@ This is a **template repository**, not a collaborative product. The
 expected flow is:
 
 1. **Fork** it to your own GitHub account or organisation.
-2. **Deploy** the fork — see [`docs/`](./docs/README.md).
+2. **Deploy** the fork — see the [step-by-step deployment guide](./docs/tutoriais/00-comece-aqui.md) (in Portuguese).
 3. **Customise** your fork. Rebrand, add the features you need, remove
    the ones you don't, swap hosting, change the schema.
 
@@ -18,8 +18,8 @@ opinions become yours.
 ```bash
 # 1. Fork on GitHub: https://github.com/advmoacirmariz-blip/crm-aberto → Fork
 # 2. Clone your fork
-git clone https://github.com/<your-username>/wacrm.git
-cd wacrm
+git clone https://github.com/<your-username>/crm-aberto.git
+cd crm-aberto
 
 cp .env.local.example .env.local   # fill in Supabase + Meta creds
 npm install
@@ -27,7 +27,7 @@ npm run dev
 ```
 
 Full setup (Supabase migrations, WhatsApp Business API, deploy) lives in
-[`docs/`](./docs/README.md).
+the [step-by-step deployment guide](./docs/tutoriais/00-comece-aqui.md) (in Portuguese).
 
 ## Keeping your fork up to date
 
