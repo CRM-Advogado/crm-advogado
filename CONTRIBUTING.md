@@ -1,3 +1,7 @@
+# Fluxo do CRM-Advogado
+
+Neste repositório, siga a [política de branches e ambientes](docs/branches-e-ambientes.md): implementações partem de `develop` e os PRs têm destino `develop`. A `main` recebe promoções revisadas e validadas para produção. Essa regra prevalece sobre o fluxo genérico do template abaixo.
+
 # Using this template
 
 This is a **template repository**, not a collaborative product. The
