@@ -1875,5 +1875,26 @@
     "retry": "Tentar novamente",
     "toastMarkReadFailed": "Falha ao marcar notificação como lida",
     "toastMarkAllFailed": "Falha ao marcar todas como lidas"
+  },
+  "whatsappSignup": {
+    "title": "Conectar WhatsApp com a Meta",
+    "description": "Autorize o WhatsApp do seu escritório sem copiar tokens ou identificadores.",
+    "numberHint": "Esta conexão é para números da Cloud API. Se você usa o WhatsApp Business no celular e quer mantê-lo, fale com o suporte antes de continuar.",
+    "pinLabel": "PIN de segurança de seis dígitos",
+    "pinHint": "Use o PIN de verificação em duas etapas do número. Para um número novo, escolha um PIN e guarde-o em local seguro.",
+    "connect": "Preparar conexão",
+    "openMeta": "Continuar na Meta",
+    "back": "Voltar",
+    "working": "Conectando…",
+    "waiting": "Conclua a autorização na janela da Meta.",
+    "saving": "Confirmando o número e ativando o recebimento de mensagens…",
+    "success": "WhatsApp conectado. Faça um teste de envio e recebimento.",
+    "alreadyConnected": "O escritório já possui uma conexão. A configuração existente aparece abaixo.",
+    "unavailable": "A conexão guiada ainda não foi habilitada. Solicite a configuração ao suporte; a conexão manual continua disponível abaixo.",
+    "loading": "Verificando disponibilidade…",
+    "sdkError": "Não foi possível carregar a Meta. Verifique sua conexão ou bloqueador de conteúdo e recarregue a página.",
+    "setupError": "Não foi possível verificar a conexão. Recarregue a página ou contate o suporte.",
+    "cancelled": "Autorização cancelada. Nenhuma conexão foi salva. Você pode tentar novamente.",
+    "timeout": "A autorização demorou mais que o esperado. Reinicie a conexão."
   }
 }

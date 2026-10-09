@@ -31,6 +31,9 @@ import {
 } from '@/components/ui/accordion';
 import type { WhatsAppConfig as WhatsAppConfigType } from '@/types';
 
+import { WhatsAppEmbeddedSignup } from './whatsapp-embedded-signup';
+import { canEditSettings } from '@/lib/auth/roles';
+
 const MASKED_TOKEN = '••••••••••••••••';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'unknown';
@@ -44,7 +47,7 @@ export function WhatsAppConfig() {
   // context and key every read off it — so a teammate who just
   // joined an account sees the inviter's saved config without
   // having to re-enter anything.
-  const { user, accountId, loading: authLoading, profileLoading } = useAuth();
+  const { user, accountId, accountRole, loading: authLoading, profileLoading } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -396,6 +399,14 @@ export function WhatsAppConfig() {
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
       {/* Main config form */}
       <div className="space-y-6">
+      {accountRole && canEditSettings(accountRole) && (
+        <WhatsAppEmbeddedSignup
+          key={accountId}
+          onConnected={() => {
+            if (accountId) void fetchConfig(accountId);
+          }}
+        />
+      )}
         {/* Corrupted-token reset banner */}
         {showResetBanner && (
           <Alert className="bg-amber-950/40 border-amber-600/40">
