@@ -1875,5 +1875,26 @@
     "retry": "Retry",
     "toastMarkReadFailed": "Failed to mark notification as read",
     "toastMarkAllFailed": "Failed to mark all as read"
+  },
+  "whatsappSignup": {
+    "title": "Connect WhatsApp with Meta",
+    "description": "Authorize your office’s WhatsApp without copying tokens or IDs.",
+    "numberHint": "This connection is for Cloud API numbers. If you use the WhatsApp Business mobile app and want to keep it, contact support before continuing.",
+    "pinLabel": "Six-digit security PIN",
+    "pinHint": "Use the number’s two-step verification PIN. For a new number, choose a PIN and keep it in a safe place.",
+    "connect": "Prepare connection",
+    "openMeta": "Continue with Meta",
+    "back": "Back",
+    "working": "Connecting…",
+    "waiting": "Complete authorization in the Meta window.",
+    "saving": "Verifying the number and activating incoming messages…",
+    "success": "WhatsApp connected. Test sending and receiving a message.",
+    "alreadyConnected": "Your office already has a connection. Its configuration is shown below.",
+    "unavailable": "Guided connection is not enabled yet. Contact support to set it up; manual connection is still available below.",
+    "loading": "Checking availability…",
+    "sdkError": "Unable to load Meta. Check your connection or content blocker and reload the page.",
+    "setupError": "Unable to check the connection. Reload the page or contact support.",
+    "cancelled": "Authorization cancelled. No connection was saved. You can try again.",
+    "timeout": "Authorization took longer than expected. Restart the connection."
   }
 }

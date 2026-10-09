@@ -1875,5 +1875,26 @@
     "retry": "다시 시도",
     "toastMarkReadFailed": "알림을 읽음으로 표시하지 못했습니다",
     "toastMarkAllFailed": "모두 읽음으로 표시하지 못했습니다"
+  },
+  "whatsappSignup": {
+    "title": "Meta로 WhatsApp 연결",
+    "description": "토큰이나 ID를 복사하지 않고 사무실의 WhatsApp을 승인하세요.",
+    "numberHint": "이 연결은 Cloud API 번호용입니다. WhatsApp Business 모바일 앱을 계속 사용하려면 진행하기 전에 지원팀에 문의하세요.",
+    "pinLabel": "6자리 보안 PIN",
+    "pinHint": "번호의 2단계 인증 PIN을 사용하세요. 새 번호의 경우 PIN을 선택하고 안전한 곳에 보관하세요.",
+    "connect": "연결 준비",
+    "openMeta": "Meta에서 계속",
+    "back": "뒤로",
+    "working": "연결 중…",
+    "waiting": "Meta 창에서 승인을 완료하세요.",
+    "saving": "번호를 확인하고 메시지 수신을 활성화하는 중…",
+    "success": "WhatsApp이 연결되었습니다. 메시지 전송과 수신을 테스트하세요.",
+    "alreadyConnected": "사무실에 이미 연결이 있습니다. 설정은 아래에 표시됩니다.",
+    "unavailable": "안내 연결이 아직 활성화되지 않았습니다. 지원팀에 설정을 요청하세요. 아래에서 수동 연결을 사용할 수 있습니다.",
+    "loading": "사용 가능 여부 확인 중…",
+    "sdkError": "Meta를 불러올 수 없습니다. 연결이나 콘텐츠 차단기를 확인하고 페이지를 새로 고치세요.",
+    "setupError": "연결을 확인할 수 없습니다. 페이지를 새로 고치거나 지원팀에 문의하세요.",
+    "cancelled": "승인이 취소되었습니다. 연결이 저장되지 않았습니다. 다시 시도할 수 있습니다.",
+    "timeout": "승인이 예상보다 오래 걸렸습니다. 연결을 다시 시작하세요."
   }
 }
