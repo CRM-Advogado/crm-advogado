@@ -1,19 +1,13 @@
-import {
-  sendInteractiveButtons,
-  sendInteractiveList,
-  sendMediaMessage,
-  sendTextMessage,
-  type InteractiveButton,
-  type InteractiveListSection,
-  type MediaKind,
-} from '@/lib/whatsapp/meta-api'
+import { sendOutbound, canTryRecipientVariant } from '@/lib/whatsapp/providers/send-outbound';
+import { resolveLegacyMetaProvider } from '@/lib/whatsapp/providers/legacy-meta-connection';
+import { type Choice as InteractiveButton, type ChoiceSection as InteractiveListSection, type MediaKind } from '@/lib/whatsapp/providers/domain';
 import type { InteractiveMessagePayload } from '@/lib/whatsapp/interactive'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import {
   sanitizePhoneForMeta,
   isValidE164,
   phoneVariants,
-  isRecipientNotAllowedError,
+
 } from '@/lib/whatsapp/phone-utils'
 import { supabaseAdmin } from './admin-client'
 
@@ -93,14 +87,14 @@ export async function engineSendText(
 
   const accessToken = decrypt(config.access_token)
 
+  const provider = resolveLegacyMetaProvider(args.accountId, config, accessToken);
+
   const attempt = async (phone: string): Promise<string> => {
-    const r = await sendTextMessage({
-      phoneNumberId: config.phone_number_id,
-      accessToken,
+    const r = await sendOutbound(args.accountId, provider, { kind: 'text',
       to: phone,
       text: args.text,
     })
-    return r.messageId
+    return r.value
   }
 
   const variants = phoneVariants(sanitized)
@@ -114,8 +108,8 @@ export async function engineSendText(
       lastError = null
       break
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      if (!isRecipientNotAllowedError(msg)) throw err
+
+      if (!canTryRecipientVariant(err)) throw err
       lastError = err
     }
   }
@@ -203,17 +197,17 @@ export async function engineSendMedia(
 
   const accessToken = decrypt(config.access_token)
 
+  const provider = resolveLegacyMetaProvider(args.accountId, config, accessToken);
+
   const attempt = async (phone: string): Promise<string> => {
-    const r = await sendMediaMessage({
-      phoneNumberId: config.phone_number_id,
-      accessToken,
+    const r = await sendOutbound(args.accountId, provider, { kind: 'media',
       to: phone,
-      kind: args.kind,
-      link: args.link,
+      mediaKind: args.kind,
+      url: args.link,
       caption: args.caption,
       filename: args.filename,
     })
-    return r.messageId
+    return r.value
   }
 
   const variants = phoneVariants(sanitized)
@@ -227,8 +221,8 @@ export async function engineSendMedia(
       lastError = null
       break
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      if (!isRecipientNotAllowedError(msg)) throw err
+
+      if (!canTryRecipientVariant(err)) throw err
       lastError = err
     }
   }
@@ -355,30 +349,28 @@ async function sendInteractiveViaMeta(
 
   const accessToken = decrypt(config.access_token)
 
+  const provider = resolveLegacyMetaProvider(input.accountId, config, accessToken);
+
   const attempt = async (phone: string): Promise<string> => {
     if (input.kind === 'buttons') {
-      const r = await sendInteractiveButtons({
-        phoneNumberId: config.phone_number_id,
-        accessToken,
+      const r = await sendOutbound(input.accountId, provider, { kind: 'buttons',
         to: phone,
-        bodyText: input.bodyText,
+        body: input.bodyText,
         buttons: input.buttons,
-        headerText: input.headerText,
-        footerText: input.footerText,
+        header: input.headerText,
+        footer: input.footerText,
       })
-      return r.messageId
+      return r.value
     }
-    const r = await sendInteractiveList({
-      phoneNumberId: config.phone_number_id,
-      accessToken,
+    const r = await sendOutbound(input.accountId, provider, { kind: 'list',
       to: phone,
-      bodyText: input.bodyText,
+      body: input.bodyText,
       buttonLabel: input.buttonLabel,
       sections: input.sections,
-      headerText: input.headerText,
-      footerText: input.footerText,
+      header: input.headerText,
+      footer: input.footerText,
     })
-    return r.messageId
+    return r.value
   }
 
   // Same phone-variant retry as automations/meta-send.ts. Numbers
@@ -395,8 +387,8 @@ async function sendInteractiveViaMeta(
       lastError = null
       break
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      if (!isRecipientNotAllowedError(msg)) throw err
+
+      if (!canTryRecipientVariant(err)) throw err
       lastError = err
     }
   }
