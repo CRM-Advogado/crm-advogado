@@ -46,16 +46,16 @@ durável, reconciliação automática ou garantia exactly-once nesta entrega.
 uma capacidade no registro. A pesquisa de APIs e fontes permanece no documento
 de provedores, sem confundir documentação externa com integração entregue.
 
-| Capacidade                                           | Meta Cloud                                                         | YCloud                     | Gupshup                   |
-| ---------------------------------------------------- | ------------------------------------------------------------------ | -------------------------- | ------------------------- |
-| Texto, mídia, modelo aprovado, botões, lista, reação | Implementado pela porta neutra                                     | Planejado, não registrado  | Planejado, não registrado |
-| Referências isoladas por conta/conexão/provedor      | Implementado                                                       | Contrato preparado         | Contrato preparado        |
-| Download autenticado de mídia pela porta             | Implementado, limite 25 MiB; chamadores legados ainda não migrados | Pendente                   | Pendente                  |
-| Administração de modelos                             | Código legado específico; capability neutra desabilitada           | Pendente                   | Pendente                  |
-| Onboarding pela porta                                | Desabilitado; registro legado específico                           | Decisão comercial pendente | Pendente                  |
-| Entrada/status via conexão autenticada               | Meta com conta resolvida antes do status e transição monotônica    | Pendente                   | Pendente                  |
-| Repetição automática de envio incerto                | Não suportada                                                      | Não prometida              | Não prometida             |
-| Mais de uma conexão por conta                        | Não habilitado no schema atual                                     | Não habilitado             | Não habilitado            |
+| Capacidade                                           | Meta Cloud                                                         | YCloud                                                                      | Gupshup                   |
+| ---------------------------------------------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------- | ------------------------- |
+| Texto, mídia, modelo aprovado, botões, lista, reação | Implementado pela porta neutra                                     | Adaptador isolado com fixtures; não registrado no runtime                   | Planejado, não registrado |
+| Referências isoladas por conta/conexão/provedor      | Implementado                                                       | Contrato preparado                                                          | Contrato preparado        |
+| Download autenticado de mídia pela porta             | Implementado, limite 25 MiB; chamadores legados ainda não migrados | Pendente                                                                    | Pendente                  |
+| Administração de modelos                             | Código legado específico; capability neutra desabilitada           | Pendente                                                                    | Pendente                  |
+| Onboarding pela porta                                | Desabilitado; registro legado específico                           | Decisão comercial pendente                                                  | Pendente                  |
+| Entrada/status via conexão autenticada               | Meta com conta resolvida antes do status e transição monotônica    | Verificador e normalizador puros com fixtures; sem endpoint ou persistência | Pendente                  |
+| Repetição automática de envio incerto                | Não suportada                                                      | Não prometida                                                               | Não prometida             |
+| Mais de uma conexão por conta                        | Não habilitado no schema atual                                     | Não habilitado                                                              | Não habilitado            |
 
 ## Portas e responsabilidades
 
