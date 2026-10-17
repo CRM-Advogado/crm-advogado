@@ -9,21 +9,41 @@ export interface ProviderConnection {
 
 export interface ProviderExternalId extends ProviderConnection {
   readonly value: string;
+  /** Original messaging-network ID, when distinct from the provider resource ID.
+   * YCloud's id is not its wamid. A missing value is valid before reconciliation,
+   * but that resource cannot yet be the target of a reply or reaction. */
+  readonly transportMessageId?: string;
 }
 
 export function externalId(
   connection: ProviderConnection,
-  value: string
+  value: string,
+  transportMessageId?: string
 ): ProviderExternalId {
   if (
     !connection.accountId?.trim() ||
     !connection.connectionId?.trim() ||
     !['meta_cloud', 'ycloud', 'gupshup'].includes(connection.provider) ||
-    !value?.trim()
+    !value?.trim() ||
+    (transportMessageId !== undefined && !transportMessageId?.trim())
   ) {
     throw new Error('Invalid WhatsApp external reference');
   }
-  return Object.freeze({ ...connection, value });
+  return Object.freeze({
+    accountId: connection.accountId,
+    connectionId: connection.connectionId,
+    provider: connection.provider,
+    value,
+    ...(transportMessageId === undefined ? {} : { transportMessageId }),
+  });
+}
+
+export function messageTarget(reference: ProviderExternalId): string {
+  externalId(reference, reference.value, reference.transportMessageId);
+  if (reference.provider === 'meta_cloud') return reference.value;
+  if (!reference.transportMessageId)
+    throw new Error('WhatsApp message target has not been reconciled');
+  return reference.transportMessageId;
 }
 
 export function assertSameConnection(
@@ -149,3 +169,30 @@ export interface WhatsAppProvider {
   readonly messaging: MessagingPort;
   readonly media?: MediaPort;
 }
+
+export type InboundContent =
+  | { kind: 'text'; text: string }
+  | {
+      kind: 'media';
+      mediaKind: MediaKind;
+      reference?: ProviderExternalId;
+      url?: string;
+      caption?: string;
+      filename?: string;
+      mimeType?: string;
+    }
+  | { kind: 'choice'; id: string; title: string; description?: string }
+  | { kind: 'reaction'; targetTransportMessageId: string; emoji: string }
+  | { kind: 'unsupported'; contentType: string };
+
+export type NormalizedProviderEvent = {
+  event: ProviderExternalId;
+  occurredAt: string;
+  message: ProviderExternalId;
+} & (
+  | {
+      kind: 'delivery';
+      status: 'accepted' | 'sent' | 'delivered' | 'read' | 'failed';
+    }
+  | { kind: 'inbound'; from: string; to: string; content: InboundContent }
+);

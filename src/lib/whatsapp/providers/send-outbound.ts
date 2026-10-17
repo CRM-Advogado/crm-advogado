@@ -1,6 +1,7 @@
 import {
   assertSameConnection,
   externalId,
+  messageTarget,
   ProviderError,
   type OutboundMessage,
   type WhatsAppProvider,
@@ -70,9 +71,14 @@ export async function sendOutbound(
       'rejected'
     );
   }
-  if (message.replyTo) assertSameConnection(connection, message.replyTo);
-  if (message.kind === 'reaction')
+  if (message.replyTo) {
+    assertSameConnection(connection, message.replyTo);
+    messageTarget(message.replyTo);
+  }
+  if (message.kind === 'reaction') {
     assertSameConnection(connection, message.target);
+    messageTarget(message.target);
+  }
   if (message.kind === 'template')
     for (const slot of message.slots) {
       for (const value of slot.values)
@@ -83,7 +89,7 @@ export async function sendOutbound(
   // A provider may have accepted this send even if its response is malformed.
   try {
     assertSameConnection(connection, result);
-    return externalId(connection, result.value);
+    return externalId(connection, result.value, result.transportMessageId);
   } catch {
     throw new ProviderError(
       'WhatsApp provider returned an invalid message reference',
