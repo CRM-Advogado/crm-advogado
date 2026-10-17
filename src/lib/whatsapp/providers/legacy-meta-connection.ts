@@ -1,10 +1,12 @@
 import { createMetaCloudProvider } from './meta-cloud';
 import { resolveProvider } from './registry';
+import { assertDurableConnection } from '../durable/execution-context';
 
 interface LegacyMetaConfig {
   id: string;
   account_id: string;
   phone_number_id: string;
+  waba_id?: string | null;
   provider?: unknown;
 }
 
@@ -17,6 +19,7 @@ export function resolveLegacyMetaProvider(
   config: LegacyMetaConfig,
   accessToken: string
 ) {
+  assertDurableConnection(config);
   if (config.provider !== undefined && config.provider !== 'meta_cloud') {
     throw new Error('Legacy WhatsApp configuration is not a Meta connection');
   }

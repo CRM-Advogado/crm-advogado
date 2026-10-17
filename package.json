@@ -37,7 +37,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:whatsapp-durable:qa": "node scripts/qa/whatsapp-durable-qa.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -69,6 +70,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
+    "pg": "^8.23.1",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
     "shadcn": "^4.11.0",

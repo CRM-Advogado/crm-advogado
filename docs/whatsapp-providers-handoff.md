@@ -1,10 +1,32 @@
 # Entrega e continuidade das tarefas WA
 
-Referência: tarefas WA-01 a WA-09 no Coda CRM - Advocacia. Data: 15/10/2026.
+Referência: tarefas WA-01 a WA-09 no Coda CRM - Advocacia. Data: 17/10/2026.
 Repositório confirmado pelo usuário: `CRM-Advogado/crm-advogado`.
-Base de desenvolvimento: `origin/develop` em `efdd4ce`.
+Base deste incremento: `origin/develop` em `8fb566e`, após integração autorizada dos PRs #3 e #4.
 Público inicial confirmado: advogado individual com um número; evolução para
 escritórios e múltiplos números depende de necessidade posterior.
+Coexistência do aplicativo WhatsApp Business com o CRM no mesmo número é obrigatória.
+
+## Continuidade em 17/10
+
+Os PRs #3 e #4 foram integrados, nessa ordem, em `develop`, com autorização do
+usuário. Os merges são `6d92a06` e `8fb566e`; o CI de `develop` passou. Isso não
+ativa a YCloud nem comprova implantação ou coexistência operacional.
+
+O [PR #6](https://github.com/CRM-Advogado/crm-advogado/pull/6) prepara a normalização
+de mensagens enviadas pelo aplicativo. Está separado, sem integração: 998 testes
+e CI aprovados, sem persistência ou ativação YCloud.
+
+A proposta do [PR #5](https://github.com/CRM-Advogado/crm-advogado/pull/5) recebeu
+aprovação para desenvolvimento local. A implementação está na branch
+`codex/whatsapp-durable-ingress`: inbox antes do ACK, materialização transacional,
+ordem por conexão e efeitos incertos encaminhados para revisão manual. O padrão
+continua desabilitado; a migration 045 foi exercitada somente em banco descartável.
+Veja `whatsapp-durable-ingress.md` e `whatsapp-durable-qa.md` para operação, testes
+e limites. Essa branch parte de `develop`, portanto não inclui o PR #6.
+
+O quadro abaixo descreve o escopo dos incrementos iniciais, com as atualizações
+acima prevalecendo sobre referências antigas a revisão e integração pendentes.
 
 ## Estado por tarefa
 
@@ -51,13 +73,13 @@ escritórios e múltiplos números depende de necessidade posterior.
 6. Confirmar o contrato Gupshup, implementar seu adaptador e homologá-lo
    separadamente. Pendência exclusiva dele não invalida o QA local da YCloud.
 
-Nenhum PR foi integrado automaticamente. O fluxo antigo de Embedded Signup
+Somente os PRs #3 e #4 tiveram integração autorizada. O fluxo antigo de Embedded Signup
 permanece no PR #2 e não foi integrado incidentalmente neste trabalho.
 
 ## Registro no Coda
 
-O backlog foi lido para definir o escopo. Tentativas posteriores de consultar
-o esquema da tabela retornaram `Unexpected response type` no conector. Não
+O backlog foi lido para definir o escopo. O conector posteriormente informou
+limite mensal de 60 requisições MCP, após erros de leitura de esquema. Não
 foram alterados status, descrições ou comentários por um caminho alternativo.
 Este documento registra as entregas e pendências para atualização posterior,
 sem tratar tarefas parciais ou validações externas como concluídas.
