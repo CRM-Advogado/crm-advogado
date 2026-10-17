@@ -71,8 +71,10 @@ tem mensagem estável, sem expor trechos do corpo em logs.
   escolhas de botões/lista e reação. URLs de mídia são apenas dados: nenhuma
   requisição ou credencial é enviada a elas. Outros conteúdos são marcados
   explicitamente como não suportados.
-- Outros eventos, incluindo SMB/echo, e grupos não são processados. BSUID
-  fica fora do público inicial de chats individuais com números E.164.
+- O incremento de 16/10 normaliza `whatsapp.smb.message.echoes` como evento
+  distinto de envio do aplicativo, descrito em [coexistência e echoes](ycloud-coexistence-echoes.md).
+  Outras famílias SMB, Agent echo, grupos e BSUID continuam fora do recorte;
+  nenhuma coexistência operacional ou sincronização histórica é ativada.
 
 Evento e mensagem têm referências separadas. O evento preserva sua identidade
 para deduplicação futura, mas estas funções não persistem, deduplicam ou

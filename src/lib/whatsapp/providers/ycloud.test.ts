@@ -562,3 +562,120 @@ describe('YCloud pure fixture normalization after authentication', () => {
     });
   });
 });
+
+// Shape verified against the official whatsapp.smb.message.echoes examples in
+// webhook-updates-bsuid / webhook-events-payloads. All identifiers are synthetic.
+function echoEvent(overrides: Record<string, unknown> = {}) {
+  return JSON.stringify({
+    id: 'echo-event-1',
+    type: 'whatsapp.smb.message.echoes',
+    apiVersion: 'v2',
+    createTime: '2026-10-16T12:00:00.000Z',
+    whatsappMessage: {
+      id: 'ycloud-app-message',
+      wamid: 'wamid.app-message',
+      status: 'sent',
+      from: credentials.from,
+      to: recipient,
+      wabaId: binding.wabaId,
+      type: 'text',
+      text: { body: 'Mensagem pelo aplicativo' },
+      context: { message_id: 'wamid.parent' },
+      ...overrides,
+    },
+  });
+}
+
+describe('YCloud Business app coexistence echo fixtures', () => {
+  it('normalizes an authenticated app echo as a distinct outbound event', () => {
+    const raw = echoEvent();
+    expect(
+      verifyYCloudWebhookSignature(raw, signature(raw), secret, { nowSeconds })
+    ).toBe(true);
+    const result = normalizeYCloudWebhook(raw, connection, binding);
+    expect(result).toEqual({
+      kind: 'outbound_echo',
+      source: 'business_app',
+      event: externalId(connection, 'echo-event-1'),
+      occurredAt: '2026-10-16T12:00:00.000Z',
+      message: externalId(
+        connection,
+        'ycloud-app-message',
+        'wamid.app-message'
+      ),
+      from: credentials.from,
+      to: recipient,
+      content: { kind: 'text', text: 'Mensagem pelo aplicativo' },
+      replyToTransportMessageId: 'wamid.parent',
+    });
+    expect(result?.kind).not.toBe('inbound');
+    expect(result?.kind).not.toBe('delivery');
+  });
+
+  it('preserves image metadata without fetching media or initiating a reply', () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const result = normalizeYCloudWebhook(
+      echoEvent({
+        type: 'image',
+        context: undefined,
+        image: {
+          id: 'media-app',
+          link: 'https://api.ycloud.com/v2/whatsapp/media/download/synthetic',
+          mime_type: 'image/jpeg',
+        },
+      }),
+      connection,
+      binding
+    );
+    expect(result).toMatchObject({
+      kind: 'outbound_echo',
+      source: 'business_app',
+      content: {
+        kind: 'media',
+        mediaKind: 'image',
+        reference: externalId(connection, 'media-app'),
+        url: 'https://api.ycloud.com/v2/whatsapp/media/download/synthetic',
+        mimeType: 'image/jpeg',
+      },
+    });
+    expect(result).not.toHaveProperty('replyToTransportMessageId');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { from: recipient },
+    { wabaId: 'another-waba' },
+    { to: 'not-e164' },
+  ])('rejects a mismatched or invalid echo binding: %j', (overrides) => {
+    expect(() =>
+      normalizeYCloudWebhook(echoEvent(overrides), connection, binding)
+    ).toThrow();
+  });
+
+  it('returns deterministic references on replay without pretending to deduplicate', () => {
+    const raw = echoEvent();
+    expect(normalizeYCloudWebhook(raw, connection, binding)).toEqual(
+      normalizeYCloudWebhook(raw, connection, binding)
+    );
+    expect(
+      normalizeYCloudWebhook(
+        echoEvent({ groupId: 'group' }),
+        connection,
+        binding
+      )
+    ).toBeNull();
+  });
+
+  it('does not invent a WhatsApp ID if the app echo has only a provider resource ID', () => {
+    const result = normalizeYCloudWebhook(
+      echoEvent({ wamid: undefined }),
+      connection,
+      binding
+    );
+    expect(result?.message).toEqual(
+      externalId(connection, 'ycloud-app-message')
+    );
+    expect(() => messageTarget(result!.message)).toThrow(/reconciled/);
+  });
+});

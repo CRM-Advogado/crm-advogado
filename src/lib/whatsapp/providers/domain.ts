@@ -195,4 +195,12 @@ export type NormalizedProviderEvent = {
       status: 'accepted' | 'sent' | 'delivered' | 'read' | 'failed';
     }
   | { kind: 'inbound'; from: string; to: string; content: InboundContent }
+  | {
+      kind: 'outbound_echo';
+      source: 'business_app';
+      from: string;
+      to: string;
+      content: InboundContent;
+      replyToTransportMessageId?: string;
+    }
 );
