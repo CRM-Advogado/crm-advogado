@@ -1,4 +1,7 @@
 import { NextResponse, after } from 'next/server'
+import { acceptMetaIngress, IngressError, readDurableMetaBody } from '@/lib/whatsapp/durable/ingress'
+import { drainMetaIngress } from '@/lib/whatsapp/durable/worker'
+import { createMetaOutboxExecutor } from '@/lib/whatsapp/durable/dispatch'
 import { handleMetaStatusUpdate } from '@/lib/whatsapp/providers/meta-status'
 import { createClient } from '@supabase/supabase-js'
 import { decrypt, encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption'
@@ -188,7 +191,11 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   // Read raw body first so we can HMAC-verify the exact bytes Meta
   // signed. request.json() would re-encode and break the signature.
-  const rawBody = await request.text()
+  const durableMode=process.env.WHATSAPP_DURABLE_INGRESS_ENABLED
+  let rawBody:string
+  try { rawBody=['true','paused'].includes(durableMode ?? '') ? await readDurableMetaBody(request) : await request.text() }
+  catch(error){return NextResponse.json({error:error instanceof IngressError?error.code:'webhook_read_failed'},
+    {status:error instanceof IngressError?error.status:400})}
   const signature = request.headers.get('x-hub-signature-256')
 
   if (!verifyMetaWebhookSignature(rawBody, signature)) {
@@ -198,12 +205,28 @@ export async function POST(request: Request) {
     console.warn('[webhook] rejected request with invalid signature')
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
+  if(durableMode==='paused')return NextResponse.json({error:'durable_ingress_paused'},{status:503})
 
   let body: { entry?: WhatsAppWebhookEntry[] }
   try {
     body = JSON.parse(rawBody)
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+
+  if (process.env.WHATSAPP_DURABLE_INGRESS_ENABLED === 'true') {
+    try {
+      const db = supabaseAdmin()
+      const result = await acceptMetaIngress(db,body)
+      after(async () => {
+        try { await drainMetaIngress(db,createMetaOutboxExecutor(db)) }
+        catch { console.error('[whatsapp-ingress] worker requires recovery') }
+      })
+      return NextResponse.json({ status: 'durably_received', ...result }, { status: 200 })
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof IngressError ? error.code : 'durable_acceptance_failed' },
+        { status: error instanceof IngressError ? error.status : 503 })
+    }
   }
 
   // Process AFTER the response so we ack Meta within their ~20s timeout
