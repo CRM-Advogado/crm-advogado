@@ -218,9 +218,11 @@ export function normalizeYCloudWebhook(
   const envelope = object(parsed);
   const type = requiredString(envelope.type);
   if (
-    !['whatsapp.message.updated', 'whatsapp.inbound_message.received'].includes(
-      type
-    )
+    ![
+      'whatsapp.message.updated',
+      'whatsapp.inbound_message.received',
+      'whatsapp.smb.message.echoes',
+    ].includes(type)
   )
     return null;
   const event = externalId(connection, requiredString(envelope.id));
@@ -228,6 +230,7 @@ export function normalizeYCloudWebhook(
   if (envelope.apiVersion !== 'v2' || !isRfc3339(occurredAt))
     throw new Error('Invalid YCloud webhook envelope');
   const inbound = type === 'whatsapp.inbound_message.received';
+  const echo = type === 'whatsapp.smb.message.echoes';
   const data = object(
     inbound ? envelope.whatsappInboundMessage : envelope.whatsappMessage
   );
@@ -245,6 +248,26 @@ export function normalizeYCloudWebhook(
     requiredString(data.id),
     optionalString(data.wamid)
   );
+  if (echo) {
+    if (data.groupId !== undefined) return null; // Individual chats only; no group coexistence implied.
+    const replyToTransportMessageId =
+      data.context === undefined
+        ? undefined
+        : optionalString(object(data.context).message_id);
+    return {
+      kind: 'outbound_echo',
+      source: 'business_app',
+      event,
+      occurredAt,
+      message,
+      from,
+      to,
+      content: inboundContent(connection, data),
+      ...(replyToTransportMessageId === undefined
+        ? {}
+        : { replyToTransportMessageId }),
+    };
+  }
   if (inbound) {
     if (data.groupId !== undefined) return null; // Individual chats only in this product phase.
     return {
