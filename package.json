@@ -38,7 +38,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:whatsapp-durable:qa": "node scripts/qa/whatsapp-durable-qa.mjs"
+    "test:whatsapp-durable:qa": "node scripts/qa/whatsapp-durable-qa.mjs",
+    "test:ycloud-evidence:qa": "node scripts/qa/ycloud-onboarding-evidence-qa.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
