@@ -44,6 +44,8 @@ jobs:
         run: npm ci
       - name: PostgreSQL regressions with independent connections
         run: npm run test:whatsapp-durable:qa
+      - name: YCloud onboarding evidence PostgreSQL QA
+        run: npm run test:ycloud-evidence:qa
 
   check:
     name: Lint, typecheck, test, build
