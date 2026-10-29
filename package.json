@@ -39,7 +39,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:whatsapp-durable:qa": "node scripts/qa/whatsapp-durable-qa.mjs",
-    "test:ycloud-evidence:qa": "node scripts/qa/ycloud-onboarding-evidence-qa.mjs"
+    "test:ycloud-evidence:qa": "node scripts/qa/ycloud-onboarding-evidence-qa.mjs",
+    "test:ycloud-customer-link:qa": "node scripts/qa/ycloud-customer-link-qa.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
