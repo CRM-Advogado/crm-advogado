@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import type { Contact, Tag, ContactTag } from '@/types';
@@ -60,8 +60,8 @@ import { useTranslations } from 'next-intl';
 
 const PAGE_SIZE = 25;
 
-interface ContactWithTags extends Contact {
-  tags?: Tag[];
+interface ContactRow extends Contact {
+  tagIds: string[];
 }
 
 export default function ContactsPage() {
@@ -70,7 +70,7 @@ export default function ContactsPage() {
   const canEdit = useCan('send-messages');
   const canEditSettings = useCan('edit-settings');
 
-  const [contacts, setContacts] = useState<ContactWithTags[]>([]);
+  const [contactRows, setContactRows] = useState<ContactRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
@@ -96,6 +96,10 @@ export default function ContactsPage() {
 
   // All tags for display
   const [tagsMap, setTagsMap] = useState<Record<string, Tag>>({});
+  const contacts = useMemo(() => contactRows.map(({ tagIds, ...contact }) => ({
+    ...contact,
+    tags: tagIds.map((id) => tagsMap[id]).filter(Boolean),
+  })), [contactRows, tagsMap]);
 
   // Guards against out-of-order fetch responses: each fetchContacts run
   // claims a sequence number and only the latest is allowed to commit its
@@ -130,7 +134,7 @@ export default function ContactsPage() {
     const to = from + PAGE_SIZE - 1;
     const term = search.trim();
 
-    let contactRows: Contact[];
+    let rowsWithTagIds: ContactRow[];
     let count: number;
 
     if (selectedTagIds.length > 0) {
@@ -151,12 +155,26 @@ export default function ContactsPage() {
         return;
       }
       const rows = (data ?? []) as { contact: Contact; total_count: number }[];
-      contactRows = rows.map((r) => r.contact);
+      const tagsByContact: Record<string, string[]> = {};
+      if (rows.length > 0) {
+        const { data: contactTags } = await supabase
+          .from('contact_tags')
+          .select('contact_id, tag_id')
+          .in('contact_id', rows.map(({ contact }) => contact.id));
+        if (seq !== fetchSeq.current) return;
+        contactTags?.forEach(({ contact_id, tag_id }) => {
+          (tagsByContact[contact_id] ??= []).push(tag_id);
+        });
+      }
+      rowsWithTagIds = rows.map(({ contact }) => ({
+        ...contact,
+        tagIds: tagsByContact[contact.id] ?? [],
+      }));
       count = rows.length > 0 ? Number(rows[0].total_count) : 0;
     } else {
       let query = supabase
         .from('contacts')
-        .select('*', { count: 'exact' })
+        .select('*, contact_tags(tag_id)', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -172,54 +190,24 @@ export default function ContactsPage() {
         setLoading(false);
         return;
       }
-      contactRows = data ?? [];
+      rowsWithTagIds = (data ?? []).map(({ contact_tags, ...contact }) => ({
+        ...contact,
+        tagIds: (contact_tags as Pick<ContactTag, 'tag_id'>[]).map(({ tag_id }) => tag_id),
+      }));
       count = exactCount ?? 0;
     }
 
     setTotalCount(count);
 
-    if (contactRows.length === 0) {
-      setContacts([]);
-      setLoading(false);
-      return;
-    }
-
-    // Fetch tags for these contacts
-    const contactIds = contactRows.map((c) => c.id);
-    const { data: contactTags } = await supabase
-      .from('contact_tags')
-      .select('contact_id, tag_id')
-      .in('contact_id', contactIds);
-    if (seq !== fetchSeq.current) return; // superseded by a newer fetch
-
-    const tagsByContact: Record<string, string[]> = {};
-    contactTags?.forEach((ct) => {
-      if (!tagsByContact[ct.contact_id]) tagsByContact[ct.contact_id] = [];
-      tagsByContact[ct.contact_id].push(ct.tag_id);
-    });
-
-    const enriched: ContactWithTags[] = contactRows.map((c) => ({
-      ...c,
-      tags: (tagsByContact[c.id] ?? [])
-        .map((tid) => tagsMap[tid])
-        .filter(Boolean),
-    }));
-
-    setContacts(enriched);
+    setContactRows(rowsWithTagIds);
     setLoading(false);
-  }, [supabase, page, search, selectedTagIds, tagsMap, t]);
+  }, [supabase, page, search, selectedTagIds, t]);
 
-  // Load-once-on-mount-ish data fetches. Each setter inside runs
-  // inside an async promise completion (Supabase await), not
-  // synchronously in the effect body, so the cascade the lint rule
-  // warns about doesn't apply here.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTags();
   }, [fetchTags]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchContacts();
   }, [fetchContacts]);
 

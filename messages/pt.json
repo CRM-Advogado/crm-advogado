@@ -72,7 +72,8 @@
       "newTodayVsYesterday": "novos hoje vs. ontem",
       "vsYesterday": "vs. ontem",
       "closedDeals": "{count} {count, plural, =1 {contrato fechado} other {contratos fechados}}",
-      "noChange": "Sem alteração {suffix}"
+      "noChange": "Sem alteração {suffix}",
+      "metricsUnavailable": "Não foi possível carregar os indicadores do painel."
     },
     "quickActions": {
       "newContact": "Novo Contato",
