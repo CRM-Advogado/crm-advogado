@@ -86,15 +86,15 @@ function SettingsPageInner() {
   };
 
   return (
-    <div>
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+    <div className="min-w-0">
+      <header className="crm-enter border-b border-border pb-5">
+        <h1 className="crm-title text-3xl text-foreground sm:text-4xl">
           {t('pageTitle')}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {t('pageDesc')}
         </p>
-      </div>
+      </header>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[236px_minmax(0,1fr)] lg:items-start">
         <SettingsRail active={section} onSelect={go} hints={hints} />

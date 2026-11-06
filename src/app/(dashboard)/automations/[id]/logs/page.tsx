@@ -67,7 +67,7 @@ export default function AutomationLogsPage({
   if (error) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-3">
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
         <Button variant="outline" onClick={() => router.push("/automations")}>
           {t("back")}
         </Button>
@@ -85,24 +85,24 @@ export default function AutomationLogsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
+      <header className="crm-enter flex items-start gap-3 border-b border-border pb-5">
         <button
           type="button"
           onClick={() => router.push("/automations")}
-          className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           aria-label={t("backAria")}
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">{automation.name}</h1>
+        <div className="min-w-0">
+          <h1 className="crm-title text-3xl sm:text-4xl [overflow-wrap:anywhere]">{automation.name}</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">{t("title")}</p>
         </div>
-      </div>
+      </header>
 
       {logs.length === 0 ? (
-        <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/40">
-          <p className="text-sm text-foreground">{t("emptyTitle")}</p>
+        <div className="flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card px-5 py-8 text-center">
+          <p className="font-serif text-xl text-foreground">{t("emptyTitle")}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {t("emptyDesc")}
           </p>
@@ -119,7 +119,7 @@ export default function AutomationLogsPage({
                 <button
                   type="button"
                   onClick={() => setOpenLogId(isOpen ? null : log.id)}
-                  className="flex w-full items-center gap-3 px-4 py-3 text-left"
+                  className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors hover:bg-card-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
                 >
                   {isOpen ? (
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
@@ -143,7 +143,7 @@ export default function AutomationLogsPage({
                 {isOpen && (
                   <div className="border-t border-border px-4 py-3">
                     {log.error_message && (
-                      <p className="mb-3 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-300">
+                      <p className="mb-3 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-800 dark:text-red-300">
                         {log.error_message}
                       </p>
                     )}
@@ -171,8 +171,8 @@ function StatusBadge({ status, t }: { status: AutomationLog["status"], t: Return
     status === "success"
       ? "border-primary/30 bg-primary/10 text-primary"
       : status === "partial"
-      ? "border-amber-500/30 bg-amber-500/10 text-amber-300"
-      : "border-red-500/30 bg-red-500/10 text-red-300"
+      ? "border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300"
+      : "border-red-500/30 bg-red-500/10 text-red-800 dark:text-red-300"
   return (
     <span
       className={cn(
@@ -192,7 +192,7 @@ function StepRow({ result }: { result: AutomationLogStepResult }) {
       <span
         className={cn(
           "mt-0.5 flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full",
-          ok ? "bg-primary/20 text-primary" : "bg-red-500/20 text-red-400",
+          ok ? "bg-primary/20 text-primary" : "bg-red-500/20 text-red-700 dark:text-red-300",
         )}
         aria-hidden
       >

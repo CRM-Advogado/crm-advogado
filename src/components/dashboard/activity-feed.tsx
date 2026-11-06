@@ -31,11 +31,11 @@ interface KindTheme {
 }
 
 const KIND_THEME: Record<ActivityKind, KindTheme> = {
-  message: { icon: MessageSquare, badge: 'bg-blue-500/10 text-blue-400' },
+  message: { icon: MessageSquare, badge: 'bg-blue-500/10 text-blue-800 dark:text-blue-300' },
   contact: { icon: UserPlus, badge: 'bg-primary/10 text-primary' },
   deal: { icon: Briefcase, badge: 'bg-primary/10 text-primary' },
-  broadcast: { icon: Radio, badge: 'bg-amber-500/10 text-amber-400' },
-  automation: { icon: Zap, badge: 'bg-rose-500/10 text-rose-400' },
+  broadcast: { icon: Radio, badge: 'bg-amber-500/10 text-amber-800 dark:text-amber-300' },
+  automation: { icon: Zap, badge: 'bg-rose-500/10 text-rose-800 dark:text-rose-300' },
 }
 
 import { useTranslations } from 'next-intl'
@@ -58,8 +58,8 @@ export function ActivityFeed({ items, loading }: ActivityFeedProps) {
 
   return (
     <section className="rounded-xl border border-border bg-card">
-      <header className="flex items-center justify-between border-b border-border px-5 py-4">
-        <h2 className="text-sm font-semibold text-foreground">{t('title')}</h2>
+      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-5 py-4">
+        <h2 className="font-serif text-xl leading-tight text-foreground">{t('title')}</h2>
         <Link
           href="/inbox"
           className="text-xs font-medium text-primary hover:text-primary/80"
@@ -123,7 +123,7 @@ export function ActivityFeed({ items, loading }: ActivityFeedProps) {
               )
             })}
           </ul>
-          <footer className="flex items-center justify-between border-t border-border px-5 py-3 text-xs">
+          <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-border px-5 py-3 text-xs">
             <span className="text-muted-foreground tabular-nums">
               {t('showingOf', { visible: visible.length, totalLoaded, plus: totalLoaded === 50 ? '+' : '' })}
             </span>
@@ -140,7 +140,7 @@ export function ActivityFeed({ items, loading }: ActivityFeedProps) {
                     className={cn(
                       'rounded-md px-2 py-1 font-medium tabular-nums transition-colors',
                       pageSize === size
-                        ? 'bg-secondary text-secondary-foreground'
+                        ? 'bg-accent text-accent-foreground'
                         : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                       disabled && 'cursor-not-allowed opacity-40 hover:bg-transparent hover:text-muted-foreground',
                     )}

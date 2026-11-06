@@ -10,7 +10,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 
 const MIN_PASSWORD = 8;
@@ -53,14 +52,13 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md border-border bg-card">
+    <div className="relative z-10 flex flex-1 items-center justify-center px-4 py-8">
+      <Card className="crm-enter w-full max-w-md border-border bg-card px-1 py-7 shadow-xl shadow-black/10 sm:px-4">
         <CardHeader className="items-center text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.svg" alt="" className="mb-2 h-12 w-12" />
-          <CardTitle className="text-xl text-foreground">
+          <span className="crm-mark mx-auto mb-3" aria-hidden="true">c</span>
+          <h1 className="crm-title text-3xl text-foreground">
             Set a new password
-          </CardTitle>
+          </h1>
           <CardDescription className="text-muted-foreground">
             Choose a new password for your account
           </CardDescription>
@@ -68,7 +66,7 @@ export default function ResetPasswordPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             {error && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-destructive">
                 {error}
               </div>
             )}
@@ -85,7 +83,7 @@ export default function ResetPasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
+                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
               />
             </div>
 
@@ -101,7 +99,7 @@ export default function ResetPasswordPage() {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
+                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
               />
             </div>
 

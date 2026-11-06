@@ -33,6 +33,7 @@ import { ConversationsChart } from '@/components/dashboard/conversations-chart'
 import { PipelineDonut } from '@/components/dashboard/pipeline-donut'
 import { ResponseTimeChart } from '@/components/dashboard/response-time-chart'
 import { ActivityFeed } from '@/components/dashboard/activity-feed'
+import { BrandAmbient } from '@/components/layout/brand-ambient'
 
 import { useTranslations } from 'next-intl'
 
@@ -136,17 +137,20 @@ export default function DashboardPage() {
   )
 
   return (
-    <div className="space-y-5">
+    <div className="min-w-0 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t('description')}
-        </p>
-      </div>
+      <header className="crm-ambient relative isolate overflow-hidden rounded-xl px-5 py-6 text-ambient-foreground sm:px-7">
+        <BrandAmbient />
+        <div className="crm-enter relative z-10">
+          <h1 className="crm-title text-3xl sm:text-4xl">{t('title')}</h1>
+          <p className="mt-2 max-w-prose text-sm leading-relaxed text-ambient-foreground/90">
+            {t('description')}
+          </p>
+        </div>
+      </header>
 
       {/* Metric cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metricsLoading ? (
           Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
         ) : !metrics ? (
@@ -159,6 +163,7 @@ export default function DashboardPage() {
               title={t('activeConversations')}
               value={metrics.activeConversations.current.toLocaleString()}
               icon={MessageSquare}
+              accent="primary"
               delta={{
                 sign: metrics.activeConversations.previous,
                 label: deltaLabel(
@@ -172,6 +177,7 @@ export default function DashboardPage() {
               title={t('newContactsToday')}
               value={metrics.newContactsToday.current.toLocaleString()}
               icon={UserPlus}
+              accent="emerald"
               delta={{
                 sign:
                   metrics.newContactsToday.current - metrics.newContactsToday.previous,
@@ -186,12 +192,14 @@ export default function DashboardPage() {
               title={t('closedDealsValue')}
               value={formatCurrency(metrics.closedDealsValue, defaultCurrency)}
               icon={DollarSign}
+              accent="amber"
               subtitle={t('closedDeals', { count: metrics.closedDealsCount })}
             />
             <MetricCard
               title={t('messagesSentToday')}
               value={metrics.messagesSentToday.current.toLocaleString()}
               icon={Send}
+              accent="sky"
               delta={{
                 sign:
                   metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
@@ -217,7 +225,7 @@ export default function DashboardPage() {
           this, the pipeline card rendered at its natural (shorter)
           height while the line chart drove the row height. */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <div className="h-full lg:col-span-3">
+        <div className="h-full min-w-0 lg:col-span-3">
           <ConversationsChart
             series={series}
             loading={seriesLoading}
@@ -225,7 +233,7 @@ export default function DashboardPage() {
             onRangeChange={handleRangeChange}
           />
         </div>
-        <div className="h-full lg:col-span-2">
+        <div className="h-full min-w-0 lg:col-span-2">
           <PipelineDonut
             data={pipeline}
             loading={pipelineLoading}

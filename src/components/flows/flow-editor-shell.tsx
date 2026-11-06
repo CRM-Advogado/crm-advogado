@@ -95,7 +95,7 @@ export function FlowEditorShell({ initialFlow, initialNodes }: Props) {
 
   return (
     <FlowEditorProvider initialFlow={initialFlow} initialNodes={initialNodes}>
-      <div className="flex h-full min-h-0 flex-col">
+      <div className="flex h-full min-h-0 flex-col rounded-xl border border-border bg-card">
         <EditorHeader />
 
         {/* ---- mode row: view toggle + node-type legend ----
@@ -103,7 +103,7 @@ export function FlowEditorShell({ initialFlow, initialNodes }: Props) {
             the legend is lg-only), so there's no empty band above the
             stage on small screens. */}
         {!isMobile && (
-          <div className="flex items-center gap-4 px-6 py-3.5">
+          <div className="flex items-center gap-4 px-3 py-3 sm:px-4">
             <div
               role="group"
               aria-label="Editor view"
@@ -140,7 +140,7 @@ export function FlowEditorShell({ initialFlow, initialNodes }: Props) {
         )}
 
         {/* ---- stage: the active view, owning its own overflow ---- */}
-        <div className="relative mx-6 min-h-0 flex-1 overflow-hidden rounded-xl border border-border bg-card-2">
+        <div className="relative mx-2 min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-card-2 sm:mx-4">
           {effectiveView === "canvas" ? (
             <FlowCanvas />
           ) : (
@@ -151,7 +151,7 @@ export function FlowEditorShell({ initialFlow, initialNodes }: Props) {
         </div>
 
         {/* ---- validation / activate-readiness bar ---- */}
-        <div className="px-6 pb-5 pt-3">
+        <div className="px-2 pb-2 pt-2 sm:px-4 sm:pb-4">
           <ValidationPanel />
         </div>
       </div>
@@ -200,7 +200,7 @@ function SegButton({
       className={cn(
         "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-[12.5px] font-medium transition-colors",
         active
-          ? "bg-card text-foreground shadow-sm"
+          ? "bg-accent text-accent-foreground"
           : "text-muted-foreground hover:text-foreground",
       )}
     >

@@ -40,7 +40,7 @@ export function PipelineAnalytics({ stages, deals }: PipelineAnalyticsProps) {
 
   return (
     <TooltipProvider>
-      <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-card/60 p-4 sm:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 rounded-xl border border-border bg-card p-4 sm:grid-cols-3 xl:grid-cols-6">
         <Metric
           icon={<BarChart3 className="h-4 w-4 text-muted-foreground" />}
           label={t("totalDeals")}
@@ -56,7 +56,7 @@ export function PipelineAnalytics({ stages, deals }: PipelineAnalyticsProps) {
           t={t}
         />
         <Metric
-          icon={<Target className="h-4 w-4 text-blue-400" />}
+          icon={<Target className="h-4 w-4 text-blue-700 dark:text-blue-300" />}
           label={t("avgDealSize")}
           value={
             stats.avgValue === null
@@ -67,7 +67,7 @@ export function PipelineAnalytics({ stages, deals }: PipelineAnalyticsProps) {
           t={t}
         />
         <Metric
-          icon={<HeartHandshake className="h-4 w-4 text-amber-400" />}
+          icon={<HeartHandshake className="h-4 w-4 text-amber-800 dark:text-amber-300" />}
           label={t("leadsToAttend")}
           value={String(stats.leadsToAttend)}
           tooltip={t("leadsToAttendTooltip")}
@@ -81,7 +81,7 @@ export function PipelineAnalytics({ stages, deals }: PipelineAnalyticsProps) {
           t={t}
         />
         <Metric
-          icon={<Percent className="h-4 w-4 text-emerald-400" />}
+          icon={<Percent className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />}
           label={t("conversionRate")}
           value={
             stats.conversionRate === null

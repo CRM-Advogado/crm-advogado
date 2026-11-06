@@ -76,6 +76,7 @@ const SPEC_DEFAULT_STAGES = [
 
 export default function PipelinesPage() {
   const t = useTranslations("Pipelines.page");
+  const tNavigation = useTranslations("Sidebar");
   const supabase = createClient();
   const canEditSettings = useCan("edit-settings");
   const canCreateDeals = useCan("send-messages");
@@ -373,7 +374,11 @@ export default function PipelinesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      <header className="crm-enter border-b border-border pb-5">
+        <h1 className="crm-title text-3xl text-foreground sm:text-4xl">
+          {tNavigation("pipelines")}
+        </h1>
+      </header>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           {/* Pipeline selector dropdown */}
@@ -425,7 +430,7 @@ export default function PipelinesPage() {
           </DropdownMenu>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <GatedButton
             variant="outline"
             canAct={canEditSettings}
@@ -458,9 +463,9 @@ export default function PipelinesPage() {
           ))}
         </div>
       ) : !activeBoard ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card py-20">
           <GitBranch className="h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-medium text-foreground">
+          <h3 className="mt-4 font-serif text-2xl text-foreground">
             {t("noPipelinesYet")}
           </h3>
           <p className="mt-2 text-sm text-muted-foreground">

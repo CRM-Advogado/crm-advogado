@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect } from "react";
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/use-auth";
-import { useTotalUnread } from "@/hooks/use-total-unread";
-import { useUnreadNotifications } from "@/hooks/use-unread-notifications";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useEffect, useRef } from 'react';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/use-auth';
+import { useTotalUnread } from '@/hooks/use-total-unread';
+import { useUnreadNotifications } from '@/hooks/use-unread-notifications';
 import {
   Bell,
   Bot,
@@ -41,8 +41,7 @@ const ROLE_CHIP: Record<
     icon: Crown,
     labelKey: "roleOwner",
     // Amber: scarce, immutable, "the boss" — gets visual emphasis.
-    className:
-      "border-amber-500/40 bg-amber-500/10 text-amber-300",
+    className: 'border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-300',
   },
   admin: {
     icon: Shield,
@@ -121,6 +120,7 @@ import { useTranslations } from "next-intl";
 export function Sidebar({ open = false, onClose }: SidebarProps) {
   const t = useTranslations("Sidebar");
   const pathname = usePathname();
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   const { profile, profileLoading, account, accountRole, signOut } = useAuth();
   const totalUnread = useTotalUnread();
   const unreadNotifications = useUnreadNotifications();
@@ -149,6 +149,10 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
   // mobile. No-ops on desktop because the sidebar isn't positioned there.
   useEffect(() => {
     if (!open) return;
+    const opener = document.activeElement;
+    const closeButton = closeButtonRef.current;
+    if (!closeButton?.offsetParent) return;
+    closeButton.focus({ preventScroll: true });
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => {
@@ -157,18 +161,21 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
     window.addEventListener("keydown", onKey);
     return () => {
       document.body.style.overflow = prev;
-      window.removeEventListener("keydown", onKey);
+      window.removeEventListener('keydown', onKey);
+      if (opener instanceof HTMLElement && opener.isConnected) {
+        opener.focus({ preventScroll: true });
+      }
     };
   }, [open, onClose]);
 
   return (
     <>
-      {/* Backdrop — only exists on mobile and only when open. Clicking
-          it closes the drawer. Hidden from lg+ since the sidebar is
-          part of the main flex row there. */}
+      {/* The backdrop closes the drawer by pointer. The drawer has its own close button. */}
       <button
         type="button"
-        aria-label={t("closeMenu")}
+        tabIndex={-1}
+        aria-hidden="true"
+        aria-label={t('closeMenu')}
         onClick={onClose}
         className={cn(
           "fixed inset-0 z-30 bg-background/70 backdrop-blur-sm transition-opacity lg:hidden",
@@ -181,11 +188,11 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
       <aside
         className={cn(
           // Mobile: fixed drawer that slides in from the left.
-          "fixed inset-y-0 left-0 z-40 flex h-full w-64 flex-col border-r border-border bg-card",
-          "transition-transform duration-200 ease-out will-change-transform",
-          open ? "translate-x-0" : "-translate-x-full",
+          'border-sidebar-border bg-sidebar fixed inset-y-0 left-0 z-40 flex h-full w-64 flex-col border-r',
+          'transition-transform duration-200 ease-out will-change-transform',
+          open ? 'visible translate-x-0' : 'invisible -translate-x-full',
           // Desktop: static, always visible — reset all the mobile framing.
-          "lg:static lg:z-0 lg:w-60 lg:translate-x-0 lg:transition-none",
+          'lg:visible lg:static lg:z-0 lg:w-60 lg:translate-x-0 lg:transition-none'
         )}
         aria-label="Primary"
       >
@@ -193,14 +200,14 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
             close button is hidden since the sidebar is always-visible. */}
         <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-4">
           <Link href="/dashboard" className="flex items-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.svg" alt="" className="h-8 w-8" />
-            <span className="text-sm font-semibold text-foreground">
-              {t("title")}
+            <span className="crm-mark" aria-hidden="true">c</span>
+            <span className="text-foreground text-base font-bold tracking-tight">
+              {t('title')}
             </span>
           </Link>
           <button
             type="button"
+            ref={closeButtonRef}
             onClick={onClose}
             aria-label={t("closeMenu")}
             className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground lg:hidden"
@@ -235,16 +242,16 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                       // Taller on mobile so fingers can hit the row reliably (≥44px).
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
                       isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     )}
                   >
                     <item.icon className="h-4 w-4" />
                     <span className="flex-1">{t(item.labelKey as string)}</span>
                     {item.beta && (
                       <span
-                        aria-label={t("beta")}
-                        className="rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-amber-300"
+                        aria-label={t('beta')}
+                        className="rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold tracking-wider text-amber-800 uppercase dark:text-amber-300"
                       >
                         {t("beta")}
                       </span>
@@ -284,8 +291,8 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors lg:py-2",
                       isActive
-                        ? "bg-primary/10 text-primary"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                        ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                     )}
                   >
                     <item.icon className="h-4 w-4" />

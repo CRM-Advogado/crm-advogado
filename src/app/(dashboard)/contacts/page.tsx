@@ -330,14 +330,14 @@ export default function ContactsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <header className="crm-enter flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
+          <h1 className="crm-title text-3xl text-foreground sm:text-4xl">{t('title')}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {totalCount > 0 ? t('subtitle', { count: totalCount }) : t('subtitleZero')}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {canEditSettings && (
             <Button
               variant="outline"
@@ -368,11 +368,11 @@ export default function ContactsPage() {
             {t('addContactBtn')}
           </GatedButton>
         </div>
-      </div>
+      </header>
 
       {/* Search + tag filter */}
-      <div className="space-y-2">
-        <div className="flex flex-col sm:flex-row gap-2">
+      <div className="space-y-3 rounded-xl border border-border bg-card p-3">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
@@ -459,12 +459,9 @@ export default function ContactsPage() {
               return (
                 <span
                   key={id}
-                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
-                  style={{
-                    backgroundColor: tag.color + '20',
-                    color: tag.color,
-                  }}
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground"
                 >
+                  <span aria-hidden className="size-2 shrink-0 rounded-full border" style={{ backgroundColor: tag.color }} />
                   {tag.name}
                   <button
                     onClick={() => toggleTagFilter(id)}
@@ -516,10 +513,10 @@ export default function ContactsPage() {
       )}
 
       {/* Table */}
-      <div className="rounded-lg border border-border overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
         <Table>
           <TableHeader>
-            <TableRow className="border-border hover:bg-transparent">
+            <TableRow className="border-border bg-card-2 hover:bg-card-2">
               <TableHead className="w-10">
                 <Checkbox
                   checked={allOnPageSelected}
@@ -578,7 +575,7 @@ export default function ContactsPage() {
               contacts.map((contact) => (
                 <TableRow
                   key={contact.id}
-                  className="border-border hover:bg-muted/50 cursor-pointer"
+                  className="cursor-pointer border-border transition-colors hover:bg-accent/50 data-[state=selected]:bg-accent/60 dark:hover:bg-primary-soft dark:data-[state=selected]:bg-primary-soft-2"
                   onClick={() => openDetail(contact.id)}
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>
@@ -606,12 +603,9 @@ export default function ContactsPage() {
                         contact.tags.slice(0, 3).map((tag) => (
                           <span
                             key={tag.id}
-                            className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
-                            style={{
-                              backgroundColor: tag.color + '20',
-                              color: tag.color,
-                            }}
+                            className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-foreground"
                           >
+                            <span aria-hidden className="size-2 shrink-0 rounded-full border" style={{ backgroundColor: tag.color }} />
                             {tag.name}
                           </span>
                         ))
