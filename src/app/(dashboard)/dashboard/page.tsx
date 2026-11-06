@@ -40,9 +40,13 @@ type RangeDays = 7 | 30 | 90
 
 export default function DashboardPage() {
   const t = useTranslations('Dashboard.page')
-  const { defaultCurrency } = useAuth()
-  const [metrics, setMetrics] = useState<MetricsBundle | null>(null)
-  const [metricsLoading, setMetricsLoading] = useState(true)
+  const { accountId, defaultCurrency, profileLoading } = useAuth()
+  const [metricsResult, setMetricsResult] = useState<{
+    accountId: string
+    data: MetricsBundle | null
+  } | null>(null)
+  const metrics = metricsResult?.accountId === accountId ? metricsResult.data : null
+  const metricsLoading = profileLoading || (!!accountId && metricsResult?.accountId !== accountId)
 
   const [range, setRange] = useState<RangeDays>(30)
   // Keep a cache per range so switching tabs doesn't re-fetch what we
@@ -64,17 +68,27 @@ export default function DashboardPage() {
   const [activity, setActivity] = useState<ActivityItem[] | null>(null)
   const [activityLoading, setActivityLoading] = useState(true)
 
+  useEffect(() => {
+    if (!accountId) return
+    let cancelled = false
+    void loadMetrics(createClient(), accountId)
+      .then((data) => {
+        if (!cancelled) setMetricsResult({ accountId, data })
+      })
+      .catch((err) => {
+        if (cancelled) return
+        console.error('[dashboard] metrics failed:', err)
+        setMetricsResult({ accountId, data: null })
+      })
+    return () => { cancelled = true }
+  }, [accountId])
+
   const loadAll = useCallback(() => {
     const db = createClient()
 
     // Kick everything off in parallel. Each block has its own
     // setState + finally so a slow query doesn't hold up faster
     // sections — each widget shows its own skeleton independently.
-    void loadMetrics(db)
-      .then((m) => setMetrics(m))
-      .catch((err) => console.error('[dashboard] metrics failed:', err))
-      .finally(() => setMetricsLoading(false))
-
     void loadConversationsSeries(db, 30)
       .then((s) => setSeries((prev) => ({ ...prev, 30: s })))
       .catch((err) => console.error('[dashboard] series failed:', err))
@@ -133,8 +147,12 @@ export default function DashboardPage() {
 
       {/* Metric cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {metricsLoading || !metrics ? (
+        {metricsLoading ? (
           Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+        ) : !metrics ? (
+          <p role="status" className="col-span-full rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+            {t('metricsUnavailable')}
+          </p>
         ) : (
           <>
             <MetricCard

@@ -72,7 +72,8 @@
       "newTodayVsYesterday": "new today vs yesterday",
       "vsYesterday": "vs yesterday",
       "closedDeals": "{count} closed {count, plural, =1 {contract} other {contracts}}",
-      "noChange": "No change {suffix}"
+      "noChange": "No change {suffix}",
+      "metricsUnavailable": "Unable to load the summary metrics."
     },
     "quickActions": {
       "newContact": "New Contact",
