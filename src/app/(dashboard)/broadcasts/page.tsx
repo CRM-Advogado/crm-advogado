@@ -142,7 +142,7 @@ export default function BroadcastsPage() {
   if (error) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-2">
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
         <Button variant="outline" onClick={() => window.location.reload()}>
           {t('retry')}
         </Button>
@@ -176,13 +176,20 @@ export default function BroadcastsPage() {
                 transform: translateX(400%);
               }
             }
+            @media (prefers-reduced-motion: reduce) {
+              .broadcast-indeterminate-bar {
+                width: 100%;
+                transform: none;
+                animation: none;
+              }
+            }
           `}</style>
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <header className="crm-enter flex flex-wrap items-end justify-between gap-3 border-b border-border pb-5">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
+          <h1 className="crm-title text-3xl sm:text-4xl">{t('title')}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {t('subtitle')}
           </p>
@@ -196,12 +203,14 @@ export default function BroadcastsPage() {
           <Plus className="h-4 w-4" />
           {t('newBroadcast')}
         </GatedButton>
-      </div>
+      </header>
 
       {broadcasts.length === 0 ? (
-        <div className="flex h-64 flex-col items-center justify-center rounded-xl border border-border bg-card">
-          <Radio className="mb-3 h-10 w-10 text-muted-foreground" />
-          <p className="text-sm font-medium text-foreground">{t('noBroadcastsYet')}</p>
+        <div className="flex min-h-64 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card px-5 py-8 text-center">
+          <span className="mb-3 grid size-12 place-items-center rounded-xl border border-border bg-accent text-accent-foreground">
+            <Radio className="size-5" />
+          </span>
+          <p className="font-serif text-xl text-foreground">{t('noBroadcastsYet')}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {t('createFirst')}
           </p>
@@ -219,7 +228,7 @@ export default function BroadcastsPage() {
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <Table>
             <TableHeader>
-              <TableRow className="border-border hover:bg-transparent">
+              <TableRow className="border-border bg-card-2 hover:bg-card-2">
                 <TableHead className="text-muted-foreground">{t('table.name')}</TableHead>
                 <TableHead className="hidden text-muted-foreground md:table-cell">{t('table.template')}</TableHead>
                 <TableHead className="hidden text-right text-muted-foreground sm:table-cell">
@@ -237,7 +246,7 @@ export default function BroadcastsPage() {
                 return (
                   <TableRow
                     key={broadcast.id}
-                    className="cursor-pointer border-border hover:bg-muted/50"
+                    className="cursor-pointer border-border transition-colors hover:bg-muted/60"
                     onClick={() => router.push(`/broadcasts/${broadcast.id}`)}
                   >
                     <TableCell className="font-medium text-foreground">
@@ -269,8 +278,8 @@ export default function BroadcastsPage() {
                       >
                         {status.pulse && (
                           <span className="relative flex h-1.5 w-1.5">
-                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-400 opacity-75" />
-                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-yellow-400" />
+                            <span className="absolute inline-flex h-full w-full rounded-full bg-yellow-600 opacity-75 motion-safe:animate-ping" />
+                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-yellow-700" />
                           </span>
                         )}
                         {tStatus(status.label)}

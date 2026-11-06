@@ -82,10 +82,10 @@ export function AiPlayground({ onGoToSetup }: { onGoToSetup?: () => void }) {
   return (
     <div className="flex h-[60vh] min-h-[420px] flex-col rounded-xl border border-border bg-card">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-t-xl border-b border-border bg-card-2 px-4 py-3">
+        <div className="flex flex-wrap items-center gap-2">
           <Bot className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium text-foreground">Playground</span>
+          <span className="font-serif text-lg text-foreground">Playground</span>
           <span className="text-xs text-muted-foreground">
             — test replies as if you were a customer
           </span>
@@ -105,8 +105,10 @@ export function AiPlayground({ onGoToSetup }: { onGoToSetup?: () => void }) {
       <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4">
         {turns.length === 0 && (
           <div className="flex h-full flex-col items-center justify-center text-center text-sm text-muted-foreground">
-            <Bot className="mb-2 h-8 w-8 text-muted-foreground/60" />
-            <p>Send a message to see how your agent would reply.</p>
+            <span className="mb-3 grid size-12 place-items-center rounded-xl border border-border bg-accent text-accent-foreground">
+              <Bot className="size-5" />
+            </span>
+            <p className="font-serif text-lg text-foreground">Send a message to see how your agent would reply.</p>
             <p className="mt-1 text-xs">
               It uses your knowledge base and behaves exactly like the
               auto-reply bot — including handoff.
@@ -137,17 +139,17 @@ export function AiPlayground({ onGoToSetup }: { onGoToSetup?: () => void }) {
             )}
             <div
               className={cn(
-                'max-w-[80%] rounded-2xl px-3.5 py-2 text-sm',
+                'min-w-0 max-w-[80%] rounded-xl px-3.5 py-2 text-sm break-words',
                 t.role === 'user'
                   ? 'rounded-br-sm bg-primary text-primary-foreground'
-                  : 'rounded-bl-sm bg-muted text-foreground',
+                  : 'rounded-bl-sm border border-border bg-card-2 text-foreground',
               )}
             >
               {t.content && <p className="whitespace-pre-wrap">{t.content}</p>}
               {t.role === 'assistant' && t.handoff && (
                 <p
                   className={cn(
-                    'flex items-center gap-1 text-xs text-amber-500',
+                    'flex items-center gap-1 text-xs text-amber-700 dark:text-amber-300',
                     t.content && 'mt-1.5 border-t border-border/50 pt-1.5',
                   )}
                 >
@@ -178,7 +180,7 @@ export function AiPlayground({ onGoToSetup }: { onGoToSetup?: () => void }) {
           onKeyDown={handleKeyDown}
           placeholder="Type a customer message…"
           rows={1}
-          className="flex-1 resize-none rounded-xl border border-border bg-muted px-4 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none focus:border-primary/50"
+          className="min-w-0 flex-1 resize-none rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
         />
         <Button
           size="sm"

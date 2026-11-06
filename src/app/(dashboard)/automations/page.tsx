@@ -192,7 +192,7 @@ export default function AutomationsPage() {
   if (error) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-2">
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
         <Button variant="outline" onClick={() => window.location.reload()}>
           {t("retry")}
         </Button>
@@ -212,14 +212,14 @@ export default function AutomationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <header className="crm-enter flex flex-wrap items-end justify-between gap-4 border-b border-border pb-5">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+          <h1 className="crm-title text-3xl sm:text-4xl">{t("title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {t("subtitle")}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <GatedButton
             canAct={canCreate}
             gateReason="delete automations"
@@ -261,11 +261,11 @@ export default function AutomationsPage() {
             {t("create")}
           </GatedButton>
         </div>
-      </div>
+      </header>
 
       {showTemplates && (
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-muted-foreground">{t("templatesTitle")}</h2>
+          <h2 className="mb-3 font-serif text-xl text-foreground">{t("templatesTitle")}</h2>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
             {TEMPLATE_ORDER.map((slug) => {
               const t = AUTOMATION_TEMPLATES[slug]
@@ -274,9 +274,9 @@ export default function AutomationsPage() {
                 <button
                   key={slug}
                   onClick={() => startFromTemplate(slug)}
-                  className="group flex flex-col items-start rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/50 hover:bg-card/80"
+                  className="flex flex-col items-start rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/50 hover:bg-card-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
-                  <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary group-hover:bg-primary/15">
+                  <div className="mb-3 flex size-9 items-center justify-center rounded-lg border border-border bg-accent text-accent-foreground">
                     <Icon className="h-5 w-5" />
                   </div>
                   <div className="text-sm font-semibold text-foreground">{t.name}</div>
@@ -289,11 +289,11 @@ export default function AutomationsPage() {
       )}
 
       {automations.length === 0 ? (
-        <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/40">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-            <Zap className="h-6 w-6 text-primary" />
+        <div className="flex min-h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card px-5 py-8 text-center">
+          <div className="grid size-12 place-items-center rounded-xl border border-border bg-accent text-accent-foreground">
+            <Zap className="size-5" />
           </div>
-          <p className="mt-3 text-sm font-medium text-foreground">{t("emptyTitle")}</p>
+          <p className="mt-3 font-serif text-xl text-foreground">{t("emptyTitle")}</p>
           <p className="mt-1 text-xs text-muted-foreground">
             {t("emptyDesc")}
           </p>
@@ -403,19 +403,19 @@ function AutomationCard({
 }) {
   const meta = triggerMeta(automation.trigger_type)
   return (
-    <li className="rounded-xl border border-border bg-card transition-colors hover:border-border">
-      <div className="flex items-center gap-4 p-4">
+    <li className="rounded-xl border border-border bg-card transition-colors focus-within:border-primary/40 hover:border-primary/40">
+      <div className="flex items-center gap-2 p-3 sm:gap-4 sm:p-4">
         <div
-          className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10"
+          className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-accent text-accent-foreground"
           aria-hidden
         >
-          <Zap className="h-5 w-5 text-primary" />
+          <Zap className="size-4" />
         </div>
 
         <button
           type="button"
           onClick={onEdit}
-          className="min-w-0 flex-1 text-left"
+          className="min-w-0 flex-1 rounded-sm text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <div className="flex items-center gap-2">
             <span className="truncate text-sm font-semibold text-foreground">
@@ -423,7 +423,7 @@ function AutomationCard({
             </span>
             {automation.is_active && (
               <span className="relative flex h-2 w-2" aria-label="active">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+                <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 motion-safe:animate-ping" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
               </span>
             )}
@@ -450,7 +450,7 @@ function AutomationCard({
           </div>
         </button>
 
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-3">
           <Switch
             checked={automation.is_active}
             onCheckedChange={(v) => onToggle(!!v)}

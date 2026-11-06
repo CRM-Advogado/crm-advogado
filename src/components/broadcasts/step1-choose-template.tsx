@@ -8,9 +8,9 @@ import { Loader2, FileText, ArrowRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 const categoryColors: Record<string, string> = {
-  Marketing: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-  Utility: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  Authentication: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+  Marketing: 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
+  Utility: 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
+  Authentication: 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20',
 };
 
 interface Step1Props {
@@ -62,7 +62,7 @@ export function Step1ChooseTemplate({ selectedTemplate, onSelect, onNext, onBack
   if (error) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-2">
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
       </div>
     );
   }
@@ -70,7 +70,7 @@ export function Step1ChooseTemplate({ selectedTemplate, onSelect, onNext, onBack
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-foreground">{t('chooseTemplate.title')}</h2>
+        <h2 className="font-serif text-2xl text-foreground">{t('chooseTemplate.title')}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           {t('chooseTemplate.subtitle')}
         </p>
@@ -92,10 +92,10 @@ export function Step1ChooseTemplate({ selectedTemplate, onSelect, onNext, onBack
               <button
                 key={template.id}
                 onClick={() => onSelect(template)}
-                className={`flex flex-col gap-3 rounded-xl border p-4 text-left transition-all ${
+                className={`flex flex-col gap-3 rounded-xl border p-4 text-left transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
                   isSelected
-                    ? 'border-primary bg-primary/5 ring-1 ring-primary/30'
-                    : 'border-border bg-card/50 hover:border-border hover:bg-card'
+                    ? 'border-primary bg-primary-soft ring-1 ring-primary/30'
+                    : 'border-border bg-card hover:border-primary/40 hover:bg-card-2'
                 }`}
               >
                 <div className="flex items-start justify-between">

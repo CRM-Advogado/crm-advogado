@@ -373,7 +373,7 @@ export function WhatsAppConfig() {
 
   if (loading) {
     return (
-      <section className="animate-in fade-in-50 duration-200">
+      <section className="motion-safe:animate-in motion-safe:fade-in-50 duration-200">
         <SettingsPanelHead
           title={t("title")}
           description={t("description")}
@@ -388,7 +388,7 @@ export function WhatsAppConfig() {
   const showResetBanner = resetReason === 'token_corrupted';
 
   return (
-    <section className="animate-in fade-in-50 duration-200">
+    <section className="motion-safe:animate-in motion-safe:fade-in-50 duration-200">
       <SettingsPanelHead
         title={t("title")}
         description={t("description")}
@@ -400,7 +400,7 @@ export function WhatsAppConfig() {
         {showResetBanner && (
           <Alert className="bg-amber-950/40 border-amber-600/40">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="size-5 text-amber-400 mt-0.5 shrink-0" />
+              <AlertTriangle className="size-5 text-amber-800 dark:text-amber-300 mt-0.5 shrink-0" />
               <div className="flex-1">
                 <AlertTitle className="text-amber-200 mb-1">
                   Stored token can&apos;t be decrypted
@@ -467,9 +467,9 @@ export function WhatsAppConfig() {
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 {isRegistered ? (
-                  <CheckCircle2 className="size-4 text-emerald-400" />
+                  <CheckCircle2 className="size-4 text-emerald-800 dark:text-emerald-300" />
                 ) : (
-                  <AlertTriangle className="size-4 text-amber-400" />
+                  <AlertTriangle className="size-4 text-amber-800 dark:text-amber-300" />
                 )}
                 <AlertTitle
                   className={
@@ -524,7 +524,7 @@ export function WhatsAppConfig() {
               <div className="mt-3 rounded border border-border bg-card/60 px-3 py-2 space-y-1.5 text-[11px]">
                 <p className="font-medium text-foreground">
                   {t('diagnosticLastRun')}
-                  <span className={registrationProbe.live ? 'text-emerald-400' : 'text-amber-400'}>
+                  <span className={registrationProbe.live ? 'text-emerald-800 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-300'}>
                     {registrationProbe.live ? t('live') : t('notLive')}
                   </span>
                 </p>
@@ -532,7 +532,7 @@ export function WhatsAppConfig() {
                   {Object.entries(registrationProbe.checks).map(([k, v]) => (
                     <li key={k} className="flex items-center gap-1.5">
                       {v === true ? (
-                        <CheckCircle2 className="size-3 text-emerald-400 shrink-0" />
+                        <CheckCircle2 className="size-3 text-emerald-800 dark:text-emerald-300 shrink-0" />
                       ) : v === false ? (
                         <XCircle className="size-3 text-red-400 shrink-0" />
                       ) : (

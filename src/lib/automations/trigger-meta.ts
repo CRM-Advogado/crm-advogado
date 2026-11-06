@@ -22,15 +22,15 @@ export interface TriggerMeta {
 export const TRIGGER_META: Record<AutomationTriggerType, TriggerMeta> = {
   new_message_received: {
     label: 'Nova Mensagem',
-    pillClass: 'border-blue-500/30 bg-blue-500/10 text-blue-300',
+    pillClass: 'border-blue-500/30 bg-blue-500/10 text-blue-800',
   },
   first_inbound_message: {
     label: 'Primeira Mensagem do Contato',
-    pillClass: 'border-teal-500/30 bg-teal-500/10 text-teal-300',
+    pillClass: 'border-teal-500/30 bg-teal-500/10 text-teal-800',
   },
   keyword_match: {
     label: 'Palavra-chave',
-    pillClass: 'border-purple-500/30 bg-purple-500/10 text-purple-300',
+    pillClass: 'border-purple-500/30 bg-purple-500/10 text-purple-800',
   },
   new_contact_created: {
     label: 'Novo Contato',
@@ -38,11 +38,11 @@ export const TRIGGER_META: Record<AutomationTriggerType, TriggerMeta> = {
   },
   conversation_assigned: {
     label: 'Conversa Atribuída',
-    pillClass: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-300',
+    pillClass: 'border-cyan-500/30 bg-cyan-500/10 text-cyan-800',
   },
   tag_added: {
     label: 'Etiqueta Adicionada',
-    pillClass: 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+    pillClass: 'border-amber-500/30 bg-amber-500/10 text-amber-800',
   },
   time_based: {
     label: 'Por Horário',
@@ -50,31 +50,31 @@ export const TRIGGER_META: Record<AutomationTriggerType, TriggerMeta> = {
   },
   interactive_reply: {
     label: 'Botão / Lista',
-    pillClass: 'border-pink-500/30 bg-pink-500/10 text-pink-300',
+    pillClass: 'border-pink-500/30 bg-pink-500/10 text-pink-800',
   },
 
   // ---- Gatilhos de funil (migration 042) --------------------
   deal_created: {
     label: 'Negócio Criado',
-    pillClass: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+    pillClass: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-800',
   },
   deal_stage_changed: {
     label: 'Mudou de Etapa',
-    pillClass: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-300',
+    pillClass: 'border-indigo-500/30 bg-indigo-500/10 text-indigo-800',
   },
   deal_stalled: {
     label: 'Parado na Etapa',
-    pillClass: 'border-orange-500/30 bg-orange-500/10 text-orange-300',
+    pillClass: 'border-orange-500/30 bg-orange-500/10 text-orange-800',
   },
   practice_area_set: {
     label: 'Tese Classificada',
-    pillClass: 'border-violet-500/30 bg-violet-500/10 text-violet-300',
+    pillClass: 'border-violet-500/30 bg-violet-500/10 text-violet-800',
   },
 
   // ---- ZapSign (migration 044) -------------------------------
   document_signed: {
     label: 'Documento Assinado',
-    pillClass: 'border-lime-500/30 bg-lime-500/10 text-lime-300',
+    pillClass: 'border-lime-500/30 bg-lime-500/10 text-lime-800',
   },
 }
 

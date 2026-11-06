@@ -58,7 +58,7 @@ function StatCard({ label, value, total, icon, color }: StatCardProps) {
         </div>
         <span className="text-xs text-muted-foreground">{pct}%</span>
       </div>
-      <p className="mt-3 text-2xl font-bold text-foreground">{value.toLocaleString()}</p>
+      <p className="mt-3 font-serif text-3xl leading-none tabular-nums text-foreground">{value.toLocaleString()}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   );
@@ -79,7 +79,7 @@ function FunnelChart({ steps }: { steps: FunnelStep[] }) {
   const max = Math.max(...steps.map((s) => s.value), 1);
   return (
     <div className="rounded-xl border border-border bg-card p-4">
-      <h3 className="mb-4 text-sm font-medium text-foreground">Funnel</h3>
+      <h3 className="mb-4 font-serif text-xl text-foreground">Funnel</h3>
       <div className="space-y-2">
         {steps.map((step) => {
           const pctOfMax = Math.max(5, Math.round((step.value / max) * 100));
@@ -94,12 +94,12 @@ function FunnelChart({ steps }: { steps: FunnelStep[] }) {
               </span>
               <div className="relative h-7 flex-1 rounded-full bg-muted">
                 <div
-                  className={`h-7 rounded-full ${step.color} transition-[width] duration-500`}
+                  className={`h-7 rounded-full ${step.color} transition-[width] duration-300 motion-reduce:transition-none`}
                   style={{ width: `${pctOfMax}%` }}
                 />
                 <span className="absolute inset-0 flex items-center px-3 text-xs font-medium text-foreground">
                   {step.value.toLocaleString()}
-                  <span className="ml-2 text-muted-foreground/80">
+                  <span className="ml-2 font-normal text-foreground/85">
                     ({pctOfSent}%)
                   </span>
                 </span>
@@ -255,7 +255,7 @@ export default function BroadcastDetailPage() {
   if (error || !broadcast) {
     return (
       <div className="flex h-64 flex-col items-center justify-center gap-2">
-        <p className="text-sm text-red-400">{error ?? t('notFound')}</p>
+        <p className="text-sm text-red-700 dark:text-red-300">{error ?? t('notFound')}</p>
         <Button variant="outline" onClick={() => router.push('/broadcasts')}>
           {t('backToBroadcasts')}
         </Button>
@@ -266,17 +266,17 @@ export default function BroadcastDetailPage() {
   const status = getBroadcastStatus(broadcast.status);
 
   const funnelSteps: FunnelStep[] = [
-    { label: t('stats.sent'), value: broadcast.sent_count, color: 'bg-primary' },
-    { label: t('stats.delivered'), value: broadcast.delivered_count, color: 'bg-teal-500' },
-    { label: t('stats.read'), value: broadcast.read_count, color: 'bg-blue-500' },
-    { label: t('stats.replied'), value: broadcast.replied_count, color: 'bg-indigo-500' },
+    { label: t('stats.sent'), value: broadcast.sent_count, color: 'bg-primary/15' },
+    { label: t('stats.delivered'), value: broadcast.delivered_count, color: 'bg-teal-500/15' },
+    { label: t('stats.read'), value: broadcast.read_count, color: 'bg-blue-500/15' },
+    { label: t('stats.replied'), value: broadcast.replied_count, color: 'bg-indigo-500/15' },
   ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-center gap-4">
+      <header className="crm-enter flex flex-wrap items-start justify-between gap-3 border-b border-border pb-5">
+        <div className="flex min-w-0 items-start gap-3">
           <Button
             variant="outline"
             size="icon"
@@ -285,16 +285,16 @@ export default function BroadcastDetailPage() {
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-foreground">{broadcast.name}</h1>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="crm-title text-3xl sm:text-4xl [overflow-wrap:anywhere]">{broadcast.name}</h1>
               <span
                 className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${status.classes}`}
               >
                 {tStatus(status.label)}
               </span>
             </div>
-            <div className="mt-1 flex items-center gap-3 text-sm text-muted-foreground">
+            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
               <span>{t('template', { name: broadcast.template_name })}</span>
               <span>-</span>
               <span>
@@ -310,7 +310,7 @@ export default function BroadcastDetailPage() {
             funnel inconsistent. */}
         {confirmDelete ? (
           <div className="flex items-center gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm">
-            <span className="text-red-300">{t('deletePrompt')}</span>
+            <span className="text-red-800 dark:text-red-300">{t('deletePrompt')}</span>
             <Button
               variant="outline"
               size="sm"
@@ -340,13 +340,13 @@ export default function BroadcastDetailPage() {
                 ? t('cannotDeleteSending')
                 : t('deleteHover')
             }
-            className="border-red-500/30 bg-transparent text-red-400 hover:bg-red-500/10 disabled:opacity-40"
+            className="border-red-500/30 bg-transparent text-red-700 dark:text-red-300 hover:bg-red-500/10 disabled:opacity-40"
           >
             <Trash2 className="h-3.5 w-3.5" />
             {t('delete')}
           </Button>
         )}
-      </div>
+      </header>
 
       {/* Stats — 6 cards: Total / Sent / Delivered / Read / Replied / Failed */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -369,28 +369,28 @@ export default function BroadcastDetailPage() {
           value={broadcast.delivered_count}
           total={broadcast.total_recipients}
           icon={<CheckCheck className="h-4 w-4" />}
-          color="bg-teal-500/10 text-teal-400"
+          color="bg-teal-500/10 text-teal-700 dark:text-teal-300"
         />
         <StatCard
           label={t('stats.read')}
           value={broadcast.read_count}
           total={broadcast.total_recipients}
           icon={<Eye className="h-4 w-4" />}
-          color="bg-blue-500/10 text-blue-400"
+          color="bg-blue-500/10 text-blue-700 dark:text-blue-300"
         />
         <StatCard
           label={t('stats.replied')}
           value={broadcast.replied_count}
           total={broadcast.total_recipients}
           icon={<MessageCircle className="h-4 w-4" />}
-          color="bg-indigo-500/10 text-indigo-400"
+          color="bg-indigo-500/10 text-indigo-700 dark:text-indigo-300"
         />
         <StatCard
           label={t('stats.failed')}
           value={broadcast.failed_count}
           total={broadcast.total_recipients}
           icon={<AlertCircle className="h-4 w-4" />}
-          color="bg-red-500/10 text-red-400"
+          color="bg-red-500/10 text-red-700 dark:text-red-300"
         />
       </div>
 
@@ -398,13 +398,13 @@ export default function BroadcastDetailPage() {
 
       {/* Recipients Table */}
       <div className="rounded-xl border border-border bg-card">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-          <h2 className="text-sm font-medium text-foreground">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-t-xl border-b border-border bg-card-2 px-4 py-3">
+          <h2 className="font-serif text-lg text-foreground">
             {statusFilter !== 'all'
               ? t('recipientsHeader', { filtered: filteredRecipients.length, total: recipients.length })
               : t('recipientsHeaderAll', { total: recipients.length })}
           </h2>
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger
                 render={
@@ -514,7 +514,7 @@ export default function BroadcastDetailPage() {
                           ? new Date(recipient.read_at).toLocaleString()
                           : '-'}
                       </TableCell>
-                      <TableCell className="max-w-xs truncate text-xs text-red-400">
+                      <TableCell className="max-w-xs truncate text-xs text-red-700 dark:text-red-300">
                         {recipient.error_message ?? '-'}
                       </TableCell>
                     </TableRow>

@@ -207,7 +207,7 @@ export function ProfileForm() {
     : '—';
 
   return (
-    <section className="max-w-2xl animate-in fade-in-50 duration-200">
+    <section className="max-w-2xl motion-safe:animate-in motion-safe:fade-in-50 duration-200">
       <SettingsPanelHead
         title={t('title')}
         description={t('description')}
@@ -291,7 +291,7 @@ export function ProfileForm() {
               required
             />
             {emailChangePending && (
-              <p className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+              <p className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-300">
                 <Mail className="mt-0.5 size-3.5 shrink-0" />
                 <span>
                   {t.rich('emailChangeHint', { 

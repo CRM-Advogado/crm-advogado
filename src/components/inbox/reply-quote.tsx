@@ -15,9 +15,7 @@ interface ReplyQuoteProps {
   /** Present → renders the composer-chip variant with an X button. Absent →
    *  renders the embedded-in-bubble variant. */
   onDismiss?: () => void;
-  /** True when embedded inside an outbound (primary-filled) bubble, so the
-   *  quote must read against the primary surface rather than the neutral
-   *  foreground — otherwise it goes low-contrast in light mode. */
+  /** True inside an outbound bubble, where the quote uses accent contrast. */
   onPrimary?: boolean;
 }
 
@@ -33,11 +31,11 @@ export function ReplyQuote({
     <div
       className={cn(
         "flex items-start gap-2 border-l-2 px-2 py-1",
-        onPrimary ? "border-primary-foreground/50" : "border-primary",
+        onPrimary ? "border-accent-foreground/45" : "border-primary",
         isChip
           ? "rounded-md bg-muted/80"
           : onPrimary
-            ? "mb-1.5 rounded-md bg-primary-foreground/15"
+            ? "mb-1.5 rounded-md bg-accent-foreground/10"
             : "mb-1.5 rounded-md bg-background/20",
       )}
     >
@@ -45,7 +43,7 @@ export function ReplyQuote({
         <div
           className={cn(
             "truncate text-[11px] font-medium",
-            onPrimary ? "text-primary-foreground" : "text-primary",
+            onPrimary ? "text-accent-foreground" : "text-primary",
           )}
         >
           {authorLabel}
@@ -57,7 +55,12 @@ export function ReplyQuote({
          *  layout wider, shoving the contact sidebar off-screen.
          *  `break-words` also wraps long URLs that have no whitespace
          *  to break on. Issue #165. */}
-        <div className="whitespace-pre-wrap break-words text-xs text-foreground/80">
+        <div
+          className={cn(
+            "whitespace-pre-wrap break-words text-xs",
+            onPrimary ? "text-accent-foreground/80" : "text-foreground/80",
+          )}
+        >
           {preview}
         </div>
       </div>

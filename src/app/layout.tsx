@@ -1,8 +1,6 @@
-import type { Metadata, Viewport } from "next";
+import type { Metadata } from "next";
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
-import { Inter } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { ThemedToaster } from "@/components/themed-toaster";
@@ -15,17 +13,12 @@ import {
   THEME_IDS,
 } from "@/lib/themes";
 
-const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
   title: {
     default: "Cérebro CRM",
     template: "%s — Cérebro CRM",
   },
-  description: "Self-hostable CRM template for WhatsApp.",
+  description: "Cérebro CRM. Atendimento e relacionamento com clientes.",
   robots: {
     index: false,
     follow: false,
@@ -35,11 +28,6 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-};
-
-export const viewport: Viewport = {
-  themeColor: "#020617",
-  colorScheme: "dark light",
 };
 
 // Inline boot script — runs before React hydrates so the user's
@@ -87,7 +75,7 @@ export default async function RootLayout({
       lang={locale}
       data-theme={DEFAULT_THEME}
       data-mode={DEFAULT_MODE}
-      className={`${inter.variable} h-full antialiased`}
+      className="h-full antialiased"
       // The `theme-boot` script below rewrites `data-theme` and
       // `data-mode` on <html> from localStorage before React hydrates,
       // so for any non-default choice the client DOM intentionally
@@ -98,11 +86,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <Script
-          id="theme-boot"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
       </head>
       <body className="min-h-full bg-background text-foreground font-sans">
         <NextIntlClientProvider messages={messages} locale={locale}>

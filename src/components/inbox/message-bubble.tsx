@@ -33,15 +33,15 @@ interface MessageBubbleProps {
 function StatusIcon({ status }: { status: Message["status"] }) {
   switch (status) {
     case "sending":
-      return <Clock className="h-3 w-3 text-muted-foreground" />;
+      return <Clock className="h-3 w-3 text-accent-foreground/75" />;
     case "sent":
-      return <Check className="h-3 w-3 text-muted-foreground" />;
+      return <Check className="h-3 w-3 text-accent-foreground/75" />;
     case "delivered":
-      return <CheckCheck className="h-3 w-3 text-muted-foreground" />;
+      return <CheckCheck className="h-3 w-3 text-accent-foreground/75" />;
     case "read":
-      return <CheckCheck className="h-3 w-3 text-blue-400" />;
+      return <CheckCheck className="h-3 w-3 text-blue-700 dark:text-blue-300" />;
     case "failed":
-      return <XCircle className="h-3 w-3 text-red-400" />;
+      return <XCircle className="h-3 w-3 text-red-800 dark:text-red-300" />;
     default:
       return null;
   }
@@ -49,7 +49,7 @@ function StatusIcon({ status }: { status: Message["status"] }) {
 
 function MediaUnavailable({ label, t }: { label: string, t: ReturnType<typeof useTranslations> }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+    <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground">
       <ImageOff className="h-4 w-4 shrink-0 text-muted-foreground" />
       <span>{t("unavailable", { label })}</span>
     </div>
@@ -184,7 +184,7 @@ function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof
           href={message.media_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 rounded-lg bg-muted/50 px-3 py-2 text-sm hover:bg-muted"
+          className="flex items-center gap-2 rounded-lg bg-card px-3 py-2 text-sm text-card-foreground hover:bg-card-2"
         >
           <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
           <span className="truncate">
@@ -196,7 +196,7 @@ function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof
     case "template":
       return (
         <div>
-          <span className="mb-1 inline-flex items-center gap-1 rounded bg-primary/20 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+          <span className="mb-1 inline-flex items-center gap-1 rounded bg-card-2 px-1.5 py-0.5 text-[10px] font-medium text-card-foreground">
             <LayoutTemplate className="h-3 w-3" />
             {t("template")}
           </span>
@@ -211,7 +211,7 @@ function MessageContent({ message, t }: { message: Message, t: ReturnType<typeof
     case "location":
       return (
         <div className="flex items-center gap-2 text-sm">
-          <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
+          <MapPin className="h-4 w-4 shrink-0" />
           <span>{message.content_text || t("locationShared")}</span>
         </div>
       );
@@ -281,10 +281,10 @@ export function MessageBubble({
     >
       <div
         className={cn(
-          "relative rounded-2xl px-3 py-2",
+          "relative rounded-xl border px-3 py-2",
           isAgent
-            ? "rounded-br-md bg-primary text-primary-foreground"
-            : "rounded-bl-md bg-muted text-foreground",
+            ? "rounded-br-sm border-accent-foreground/20 bg-accent text-accent-foreground"
+            : "rounded-bl-sm border-border bg-card text-card-foreground",
         )}
       >
         {reply && (
@@ -302,12 +302,12 @@ export function MessageBubble({
           )}
         >
           {/* AI badge — only on replies the auto-reply bot generated
-              (always outbound, so it sits on the primary fill). Lets
+              (always outbound, so it sits on the accent fill). Lets
               agents tell an AI reply from their own / a Flow's at a
               glance. */}
           {message.ai_generated && (
             <span
-              className="inline-flex items-center gap-0.5 rounded-full bg-primary-foreground/20 px-1.5 py-px text-[9px] font-semibold uppercase leading-none tracking-wide text-primary-foreground"
+              className="inline-flex items-center gap-0.5 rounded-full bg-accent-foreground/10 px-1.5 py-px text-[9px] font-semibold uppercase leading-none tracking-wide text-accent-foreground"
               title={t("aiBadgeTitle")}
             >
               <Sparkles className="h-2.5 w-2.5" />
@@ -317,11 +317,8 @@ export function MessageBubble({
           <span
             className={cn(
               "text-[10px]",
-              // Outbound bubbles sit on the primary fill, so the
-              // timestamp must read against that (not the neutral
-              // foreground) — otherwise it goes low-contrast in light
-              // mode. Inbound bubbles use the muted surface.
-              isAgent ? "text-primary-foreground/70" : "text-muted-foreground",
+              // Use the accent foreground for outbound metadata.
+              isAgent ? "text-accent-foreground/85" : "text-muted-foreground",
             )}
           >
             {time}

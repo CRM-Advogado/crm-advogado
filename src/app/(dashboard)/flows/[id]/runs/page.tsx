@@ -65,7 +65,7 @@ const STATUS_META: Record<
 > = {
   active: {
     label: "Active",
-    classes: "border-emerald-600/40 bg-emerald-500/10 text-emerald-300",
+    classes: "border-emerald-600/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300",
     icon: PlayCircle,
   },
   completed: {
@@ -75,7 +75,7 @@ const STATUS_META: Record<
   },
   handed_off: {
     label: "Handed off",
-    classes: "border-amber-600/40 bg-amber-500/10 text-amber-300",
+    classes: "border-amber-600/40 bg-amber-500/10 text-amber-800 dark:text-amber-300",
     icon: UserPlus,
   },
   timed_out: {
@@ -90,7 +90,7 @@ const STATUS_META: Record<
   },
   failed: {
     label: "Failed",
-    classes: "border-red-600/40 bg-red-500/10 text-red-300",
+    classes: "border-red-600/40 bg-red-500/10 text-red-800 dark:text-red-300",
     icon: CircleAlert,
   },
 };
@@ -175,19 +175,21 @@ export default function FlowRunsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
-      <button
-        type="button"
-        onClick={() => router.push(`/flows/${flow.id}`)}
-        className="mb-2 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-3 w-3" />
-        {flow.name}
-      </button>
-      <h1 className="text-xl font-semibold text-foreground">{t("title")}</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {t("description")}
-      </p>
+    <div className="mx-auto max-w-4xl">
+      <header className="crm-enter border-b border-border pb-5">
+        <button
+          type="button"
+          onClick={() => router.push(`/flows/${flow.id}`)}
+          className="mb-3 inline-flex max-w-full items-center gap-2 rounded-lg border border-border bg-card px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-card-2 hover:text-foreground"
+        >
+          <ArrowLeft className="size-3 shrink-0" />
+          <span className="truncate">{flow.name}</span>
+        </button>
+        <h1 className="crm-title text-3xl sm:text-4xl">{t("title")}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {t("description")}
+        </p>
+      </header>
 
       {runs.length === 0 ? (
         <div className="mt-6 rounded-lg border border-dashed border-border bg-card/50 px-6 py-12 text-center text-sm text-muted-foreground">
@@ -234,11 +236,11 @@ function RunCard({
       })
     : null;
   return (
-    <div className="rounded-lg border border-border bg-card">
+    <div className="rounded-xl border border-border bg-card">
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left"
+        className="flex w-full flex-wrap items-center gap-3 rounded-xl px-4 py-3 text-left transition-colors hover:bg-card-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
       >
         {expanded ? (
           <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
@@ -309,34 +311,34 @@ function RunCard({
 }
 
 const EVENT_COLOR: Record<string, string> = {
-  started: "text-emerald-300",
+  started: "text-emerald-800 dark:text-emerald-300",
   node_entered: "text-muted-foreground",
-  message_sent: "text-sky-300",
+  message_sent: "text-sky-800 dark:text-sky-300",
   reply_received: "text-primary",
-  fallback_fired: "text-amber-300",
-  handoff: "text-amber-300",
+  fallback_fired: "text-amber-800 dark:text-amber-300",
+  handoff: "text-amber-800 dark:text-amber-300",
   timeout: "text-muted-foreground",
-  error: "text-red-300",
-  completed: "text-emerald-300",
+  error: "text-red-800 dark:text-red-300",
+  completed: "text-emerald-800 dark:text-emerald-300",
 };
 
 function EventLine({ ev }: { ev: EventRow }) {
   const cls = EVENT_COLOR[ev.event_type] ?? "text-muted-foreground";
   return (
-    <div className="flex items-start gap-2 rounded-md px-2 py-1 text-xs">
-      <span className="w-32 shrink-0 text-[10px] text-muted-foreground">
+    <div className="flex flex-wrap items-start gap-x-2 gap-y-1 rounded-md px-2 py-1 text-xs">
+      <span className="w-14 shrink-0 text-[10px] tabular-nums text-muted-foreground sm:w-24">
         {format(new Date(ev.created_at), "HH:mm:ss")}
       </span>
-      <span className={cn("w-32 shrink-0 font-mono text-[10px]", cls)}>
+      <span className={cn("min-w-0 font-mono text-[10px] [overflow-wrap:anywhere] sm:w-28", cls)}>
         {ev.event_type}
       </span>
       {ev.node_key && (
-        <code className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground">
+        <code className="min-w-0 rounded bg-muted px-1 py-0.5 text-[10px] text-muted-foreground [overflow-wrap:anywhere]">
           {ev.node_key}
         </code>
       )}
       {Object.keys(ev.payload).length > 0 && (
-        <span className="min-w-0 truncate text-[10px] text-muted-foreground">
+        <span className="min-w-0 basis-full text-[10px] text-muted-foreground [overflow-wrap:anywhere] sm:basis-auto sm:truncate">
           {summarizePayload(ev.payload)}
         </span>
       )}

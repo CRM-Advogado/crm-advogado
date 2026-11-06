@@ -50,21 +50,22 @@ export function ConversationsChart({ series, loading, range, onRangeChange }: Co
 
   return (
     <section className="flex h-full flex-col rounded-xl border border-border bg-card">
-      <header className="flex items-center justify-between border-b border-border px-5 py-4">
+      <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
         <div>
-          <h2 className="text-sm font-semibold text-foreground">{t('title')}</h2>
+          <h2 className="font-serif text-xl leading-tight text-foreground">{t('title')}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">{t('description')}</p>
         </div>
-        <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-1">
+        <div className="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-muted/60 p-1">
           {[7, 30, 90].map((r) => (
             <button
               key={r}
               type="button"
               onClick={() => onRangeChange(r as RangeDays)}
+              aria-pressed={range === r}
               className={cn(
-                'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                'rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                 range === r
-                  ? 'bg-secondary text-secondary-foreground'
+                  ? 'bg-accent text-accent-foreground'
                   : 'text-muted-foreground hover:text-foreground',
               )}
             >
@@ -88,9 +89,9 @@ export function ConversationsChart({ series, loading, range, onRangeChange }: Co
         )}
       </div>
 
-      <footer className="flex items-center gap-4 border-t border-border px-5 py-3 text-xs text-muted-foreground">
-        <LegendDot color="#3b82f6" label={t('incoming')} />
-        <LegendDot color="#7c3aed" label={t('outgoing')} />
+      <footer className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-border px-5 py-3 text-xs text-muted-foreground">
+        <LegendLine color="var(--chart-2)" label={t('incoming')} dashed />
+        <LegendLine color="var(--primary)" label={t('outgoing')} />
       </footer>
     </section>
   )
@@ -252,12 +253,13 @@ function LineSvg({
           strokeLinecap="round"
           strokeLinejoin="round"
         />
-        {/* Incoming polyline (blue) */}
+        {/* Incoming polyline */}
         <path
           d={incomingPath}
           fill="none"
-          stroke="#3b82f6"
+          stroke="var(--chart-2)"
           strokeWidth={2}
+          strokeDasharray="5 4"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
@@ -273,8 +275,8 @@ function LineSvg({
               stroke="var(--muted-foreground)"
               strokeDasharray="3 3"
             />
-            <circle cx={hoverX} cy={yFor(data[hover.idx].incoming)} r={3.5} fill="#3b82f6" />
-            <circle cx={hoverX} cy={yFor(data[hover.idx].outgoing)} r={3.5} fill="#7c3aed" />
+            <circle cx={hoverX} cy={yFor(data[hover.idx].incoming)} r={3.5} fill="var(--chart-2)" />
+            <circle cx={hoverX} cy={yFor(data[hover.idx].outgoing)} r={3.5} fill="var(--primary)" />
           </g>
         )}
       </svg>
@@ -290,8 +292,8 @@ function LineSvg({
         >
           <div className="font-medium text-popover-foreground">{longDayLabel(hovered.day)}</div>
           <div className="mt-1 flex flex-col gap-0.5">
-            <span className="flex items-center gap-1.5 text-blue-300">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500" />
+            <span className="flex items-center gap-1.5 text-popover-foreground">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-chart-2" />
               {t('tooltipIncoming', { count: hovered.incoming })}
             </span>
             <span className="flex items-center gap-1.5 text-primary">
@@ -305,10 +307,12 @@ function LineSvg({
   )
 }
 
-function LegendDot({ color, label }: { color: string; label: string }) {
+function LegendLine({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: color }} />
+      <svg width="20" height="6" aria-hidden="true">
+        <line x1="1" y1="3" x2="19" y2="3" stroke={color} strokeWidth="2" strokeDasharray={dashed ? '5 4' : undefined} />
+      </svg>
       {label}
     </span>
   )

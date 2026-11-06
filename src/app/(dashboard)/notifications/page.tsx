@@ -164,10 +164,10 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="min-w-0 space-y-6">
+      <header className="crm-enter flex flex-wrap items-start justify-between gap-3 border-b border-border pb-5">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>
+          <h1 className="crm-title text-3xl text-foreground sm:text-4xl">{t("title")}</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {t("subtitle")}
           </p>
@@ -185,14 +185,14 @@ export default function NotificationsPage() {
           )}
           {t("markAllRead")}
         </Button>
-      </div>
+      </header>
 
       {notifications.length === 0 ? (
-        <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/40">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-            <Bell className="h-6 w-6 text-primary" />
+        <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-accent">
+            <Bell className="h-6 w-6 text-accent-foreground" />
           </div>
-          <p className="mt-3 text-sm font-medium text-foreground">
+          <p className="mt-3 font-serif text-xl text-foreground">
             {t("emptyTitle")}
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -210,23 +210,23 @@ export default function NotificationsPage() {
                   type="button"
                   onClick={() => handleClick(n)}
                   className={cn(
-                    "flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors",
+                    "flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
                     isUnread
-                      ? "border-primary/30 bg-primary/5 hover:border-primary/50"
-                      : "border-border bg-card hover:border-border/70",
+                      ? "border-primary/35 bg-card hover:bg-accent/35 dark:hover:bg-primary-soft"
+                      : "border-border bg-card/60 hover:bg-card",
                   )}
                 >
                   <div
                     className={cn(
                       "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg",
-                      isUnread ? "bg-primary/15" : "bg-muted",
+                      isUnread ? "bg-accent" : "bg-muted",
                     )}
                     aria-hidden
                   >
                     <Icon
                       className={cn(
                         "h-5 w-5",
-                        isUnread ? "text-primary" : "text-muted-foreground",
+                        isUnread ? "text-accent-foreground" : "text-muted-foreground",
                       )}
                     />
                   </div>
@@ -252,7 +252,7 @@ export default function NotificationsPage() {
                         {n.body}
                       </p>
                     )}
-                    <p className="mt-1 text-[11px] text-muted-foreground/70">
+                    <p className="mt-1 text-[11px] text-muted-foreground">
                       {formatDistanceToNow(new Date(n.created_at), {
                         addSuffix: true,
                       })}
