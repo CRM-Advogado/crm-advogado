@@ -4,6 +4,10 @@ import { externalId } from '@/lib/whatsapp/providers/domain'
 import { resolveLegacyMetaProvider } from '@/lib/whatsapp/providers/legacy-meta-connection'
 import { decrypt } from '@/lib/whatsapp/encryption'
 
+const MAX_CONCURRENT_DOWNLOADS_PER_ACCOUNT = 2
+// Each worker instance limits the downloads it is buffering for this account.
+const activeDownloads = new Map<string, number>()
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ mediaId: string }> }
@@ -92,16 +96,31 @@ export async function GET(
     const provider = resolveLegacyMetaProvider(accountId, config, decrypt(config.access_token))
     if (!provider.media) throw new Error('WhatsApp media download unavailable')
 
-    const reference = externalId(provider.connection, mediaId)
-    const { bytes, contentType } = await provider.media.retrieve(reference)
+    const active = activeDownloads.get(accountId) ?? 0
+    if (active >= MAX_CONCURRENT_DOWNLOADS_PER_ACCOUNT) {
+      return NextResponse.json(
+        { error: 'Too many concurrent media downloads' },
+        { status: 429, headers: { 'Retry-After': '1', 'Cache-Control': 'private, no-store' } },
+      )
+    }
 
-    return new Response(new Uint8Array(bytes), {
-      status: 200,
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'private, no-store',
-      },
-    })
+    activeDownloads.set(accountId, active + 1)
+    try {
+      const reference = externalId(provider.connection, mediaId)
+      const { bytes, contentType } = await provider.media.retrieve(reference)
+
+      return new Response(new Uint8Array(bytes), {
+        status: 200,
+        headers: {
+          'Content-Type': contentType,
+          'Cache-Control': 'private, no-store',
+        },
+      })
+    } finally {
+      const remaining = (activeDownloads.get(accountId) ?? 1) - 1
+      if (remaining === 0) activeDownloads.delete(accountId)
+      else activeDownloads.set(accountId, remaining)
+    }
   } catch (error) {
     console.error('Error in WhatsApp media GET:', error)
     return NextResponse.json(

@@ -10,11 +10,11 @@ const mediaPath = `/api/whatsapp/media/${mediaId}`
 const cdnUrl = 'https://lookaside.fbsbx.com/whatsapp/media-1'
 const fetchMock = vi.fn<typeof fetch>()
 
-function mockSupabase(owned: boolean) {
+function mockSupabase(owned: boolean, accountId = 'acct-1') {
   const profileQuery = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
-    maybeSingle: vi.fn().mockResolvedValue({ data: { account_id: 'acct-1' } }),
+    maybeSingle: vi.fn().mockResolvedValue({ data: { account_id: accountId } }),
   }
   const messageQuery = {
     select: vi.fn().mockReturnThis(),
@@ -28,7 +28,7 @@ function mockSupabase(owned: boolean) {
     single: vi.fn().mockResolvedValue({
       data: {
         id: 'cfg-1',
-        account_id: 'acct-1',
+        account_id: accountId,
         phone_number_id: 'phone-1',
         access_token: 'encrypted-token',
       },
@@ -87,5 +87,44 @@ describe('authenticated WhatsApp media proxy', () => {
     expect(result.status).toBe(404)
     expect(configQuery.eq).not.toHaveBeenCalled()
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('limits concurrent downloads per account and releases slots after completion', async () => {
+    mockSupabase(true)
+    let release = () => {}
+    const pending = new Promise<void>((resolve) => { release = resolve })
+    fetchMock
+      .mockImplementationOnce(async () => {
+        await pending
+        return Response.json({ url: cdnUrl })
+      })
+      .mockImplementationOnce(async () => {
+        await pending
+        return Response.json({ url: cdnUrl })
+      })
+      .mockResolvedValueOnce(Response.json({ url: cdnUrl }))
+      .mockResolvedValueOnce(new Response('other account'))
+      .mockResolvedValueOnce(new Response('first'))
+      .mockResolvedValueOnce(new Response('second'))
+      .mockResolvedValueOnce(Response.json({ url: cdnUrl }))
+      .mockResolvedValueOnce(new Response('retry'))
+
+    const downloads = [getMedia(), getMedia()]
+    try {
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+      const limited = await getMedia()
+      expect(limited.status).toBe(429)
+      expect(limited.headers.get('Retry-After')).toBe('1')
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+
+      mockSupabase(true, 'acct-2')
+      expect((await getMedia()).status).toBe(200)
+    } finally {
+      release()
+      await Promise.all(downloads)
+    }
+
+    mockSupabase(true)
+    expect(await (await getMedia()).text()).toBe('retry')
   })
 })

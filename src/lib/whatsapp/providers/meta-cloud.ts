@@ -66,7 +66,8 @@ export function createMetaCloudProvider(
   async function request(
     url: string,
     operation: string,
-    body?: unknown
+    body?: unknown,
+    signal = AbortSignal.timeout(TIMEOUT_MS)
   ): Promise<Response> {
     let response: Response;
     try {
@@ -77,7 +78,7 @@ export function createMetaCloudProvider(
           ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
         },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
-        signal: AbortSignal.timeout(TIMEOUT_MS),
+        signal,
         cache: 'no-store',
         redirect: 'error',
       });
@@ -272,9 +273,12 @@ export function createMetaCloudProvider(
     media: Object.freeze({
       async retrieve(reference: ProviderExternalId) {
         assertSameConnection(identity, reference);
+        const deadline = AbortSignal.timeout(TIMEOUT_MS);
         const response = await request(
           `${API}/${encodeURIComponent(reference.value)}`,
-          'media'
+          'media',
+          undefined,
+          deadline
         );
         let metadata: { url?: unknown; mime_type?: unknown };
         try {
@@ -299,7 +303,7 @@ export function createMetaCloudProvider(
           )
         )
           throw fail('media', 'invalid_download_url', 'rejected');
-        const download = await request(url.toString(), 'media');
+        const download = await request(url.toString(), 'media', undefined, deadline);
         if (Number(download.headers.get('content-length')) > MAX_MEDIA_BYTES) {
           await download.body?.cancel();
           throw fail('media', 'media_too_large', 'rejected');

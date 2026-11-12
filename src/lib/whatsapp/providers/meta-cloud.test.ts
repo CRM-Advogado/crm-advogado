@@ -249,3 +249,66 @@ it('rejects oversized download content before buffering it', async () => {
     )
   ).rejects.toMatchObject({ code: 'media_too_large', outcome: 'rejected' });
 });
+
+it('cancels oversized downloads even without a content-length header', async () => {
+  const cancel = vi.fn();
+  const chunk = new Uint8Array(13 * 1024 * 1024);
+  const stream = new ReadableStream({
+    start(controller) {
+      controller.enqueue(chunk);
+      controller.enqueue(chunk);
+    },
+    cancel,
+  });
+  const fetchMock = vi.fn()
+    .mockResolvedValueOnce(Response.json({ url: 'https://lookaside.fbsbx.com/whatsapp/file' }))
+    .mockResolvedValueOnce(new Response(stream));
+  vi.stubGlobal('fetch', fetchMock);
+
+  await expect(createMetaCloudProvider(connection, credentials).media!.retrieve(
+    externalId(connection, 'media')
+  )).rejects.toMatchObject({ code: 'media_too_large' });
+  expect(cancel).toHaveBeenCalledOnce();
+});
+
+it('reuses the same timeout across metadata and download and aborts a stalled body', async () => {
+  const deadline = new AbortController();
+  const timeout = vi.spyOn(AbortSignal, 'timeout').mockReturnValue(deadline.signal);
+  const fetchMock = vi.fn<typeof fetch>()
+    .mockResolvedValueOnce(Response.json({ url: 'https://lookaside.fbsbx.com/whatsapp/file' }))
+    .mockImplementationOnce(async (_url, init) => new Response(new ReadableStream({
+      start(controller) {
+        init?.signal?.addEventListener('abort', () => controller.error(init.signal?.reason), { once: true });
+      },
+    })));
+  vi.stubGlobal('fetch', fetchMock);
+
+  try {
+    const retrieval = createMetaCloudProvider(connection, credentials).media!.retrieve(
+      externalId(connection, 'media')
+    );
+    const rejected = expect(retrieval).rejects.toMatchObject({ code: 'transport_error' });
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    expect(timeout).toHaveBeenCalledExactlyOnceWith(15_000);
+    expect(fetchMock.mock.calls.map(([, init]) => init?.signal)).toEqual([
+      deadline.signal, deadline.signal,
+    ]);
+    deadline.abort();
+    await rejected;
+  } finally {
+    deadline.abort();
+    timeout.mockRestore();
+  }
+});
+
+it('never requests a media URL outside the approved Meta hosts', async () => {
+  const fetchMock = vi.fn().mockResolvedValueOnce(
+    Response.json({ url: 'https://lookaside.fbsbx.com.example.test/whatsapp/file' })
+  );
+  vi.stubGlobal('fetch', fetchMock);
+
+  await expect(createMetaCloudProvider(connection, credentials).media!.retrieve(
+    externalId(connection, 'media')
+  )).rejects.toMatchObject({ code: 'invalid_download_url' });
+  expect(fetchMock).toHaveBeenCalledOnce();
+});
