@@ -46,6 +46,8 @@ jobs:
         run: npm run test:whatsapp-durable:qa
       - name: YCloud onboarding evidence PostgreSQL QA
         run: npm run test:ycloud-evidence:qa
+      - name: YCloud customer identity PostgreSQL QA
+        run: npm run test:ycloud-customer-link:qa
 
   check:
     name: Lint, typecheck, test, build
