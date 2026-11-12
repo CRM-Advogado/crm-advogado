@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getMediaUrl, downloadMedia } from '@/lib/whatsapp/meta-api'
+import { externalId } from '@/lib/whatsapp/providers/domain'
+import { resolveLegacyMetaProvider } from '@/lib/whatsapp/providers/legacy-meta-connection'
 import { decrypt } from '@/lib/whatsapp/encryption'
 
 export async function GET(
@@ -88,22 +89,17 @@ export async function GET(
       )
     }
 
-    const accessToken = decrypt(config.access_token)
+    const provider = resolveLegacyMetaProvider(accountId, config, decrypt(config.access_token))
+    if (!provider.media) throw new Error('WhatsApp media download unavailable')
 
-    // Get the download URL from Meta
-    const mediaInfo = await getMediaUrl({ mediaId, accessToken })
+    const reference = externalId(provider.connection, mediaId)
+    const { bytes, contentType } = await provider.media.retrieve(reference)
 
-    // Download the binary data
-    const { buffer, contentType } = await downloadMedia({
-      downloadUrl: mediaInfo.url,
-      accessToken,
-    })
-
-    return new Response(new Uint8Array(buffer), {
+    return new Response(new Uint8Array(bytes), {
       status: 200,
       headers: {
-        'Content-Type': contentType || mediaInfo.mimeType || 'application/octet-stream',
-        'Cache-Control': 'public, max-age=86400',
+        'Content-Type': contentType,
+        'Cache-Control': 'private, no-store',
       },
     })
   } catch (error) {
