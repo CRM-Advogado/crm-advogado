@@ -37,6 +37,10 @@ import { canEditSettings } from '@/lib/auth/roles';
 const MASKED_TOKEN = '••••••••••••••••';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'unknown';
+type WhatsAppConfigSummary = Pick<
+  WhatsAppConfigType,
+  'phone_number_id' | 'waba_id' | 'status' | 'registered_at' | 'last_registration_error'
+>;
 type ResetReason = 'token_corrupted' | 'meta_api_error' | null;
 
 export function WhatsAppConfig() {
@@ -49,12 +53,14 @@ export function WhatsAppConfig() {
   // having to re-enter anything.
   const { user, accountId, accountRole, loading: authLoading, profileLoading } = useAuth();
 
+  const userId = user?.id;
+  const canManageWhatsApp = accountRole !== null && canEditSettings(accountRole);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [showToken, setShowToken] = useState(false);
-  const [config, setConfig] = useState<WhatsAppConfigType | null>(null);
+  const [config, setConfig] = useState<WhatsAppConfigSummary | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('unknown');
   const [resetReason, setResetReason] = useState<ResetReason>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
@@ -108,7 +114,7 @@ export function WhatsAppConfig() {
       // remains accurate.
       const { data, error } = await supabase
         .from('whatsapp_config')
-        .select('*')
+        .select('phone_number_id, waba_id, status, registered_at, last_registration_error')
         .eq('account_id', acctId)
         .maybeSingle();
 
@@ -137,7 +143,7 @@ export function WhatsAppConfig() {
       setRegistrationProbe(null);
 
       // Then verify health via the API (decrypts token + pings Meta)
-      if (data) {
+      if (data && canManageWhatsApp) {
         try {
           const res = await fetch('/api/whatsapp/config', { method: 'GET' });
           const payload = await res.json();
@@ -156,7 +162,7 @@ export function WhatsAppConfig() {
           setConnectionStatus('disconnected');
         }
       } else {
-        setConnectionStatus('disconnected');
+        setConnectionStatus(data?.status === 'connected' ? 'connected' : 'disconnected');
         setResetReason(null);
         setStatusMessage('');
       }
@@ -166,7 +172,7 @@ export function WhatsAppConfig() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, canManageWhatsApp]);
 
   useEffect(() => {
     // Need both the auth session (`!authLoading`) AND the profile
@@ -175,7 +181,7 @@ export function WhatsAppConfig() {
     // for the first render window and bail without ever retrying
     // once the profile arrives.
     if (authLoading || profileLoading) return;
-    if (!user || !accountId) {
+    if (!userId || !accountId) {
       loadedAccountIdRef.current = null;
       setLoading(false);
       return;
@@ -183,9 +189,10 @@ export function WhatsAppConfig() {
     if (loadedAccountIdRef.current === accountId) return;
     loadedAccountIdRef.current = accountId;
     fetchConfig(accountId);
-  }, [authLoading, profileLoading, user?.id, accountId, fetchConfig]);
+  }, [authLoading, profileLoading, userId, accountId, fetchConfig]);
 
   async function handleSave() {
+    if (!canManageWhatsApp) return;
     if (!phoneNumberId.trim()) {
       toast.error('Phone Number ID is required');
       return;
@@ -281,6 +288,7 @@ export function WhatsAppConfig() {
   }
 
   async function handleTestConnection() {
+    if (!canManageWhatsApp) return;
     try {
       setTesting(true);
       const res = await fetch('/api/whatsapp/config', { method: 'GET' });
@@ -311,6 +319,7 @@ export function WhatsAppConfig() {
   }
 
   async function handleVerifyRegistration() {
+    if (!canManageWhatsApp) return;
     setVerifyingRegistration(true);
     setRegistrationProbe(null);
     try {
@@ -337,6 +346,7 @@ export function WhatsAppConfig() {
   }
 
   async function handleReset() {
+    if (!canManageWhatsApp) return;
     if (!confirm('This will delete the current WhatsApp config so you can re-enter it. Continue?')) {
       return;
     }
@@ -399,7 +409,7 @@ export function WhatsAppConfig() {
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
       {/* Main config form */}
       <div className="space-y-6">
-      {accountRole && canEditSettings(accountRole) && (
+      {canManageWhatsApp && (
         <WhatsAppEmbeddedSignup
           key={accountId}
           onConnected={() => {
@@ -421,7 +431,7 @@ export function WhatsAppConfig() {
                 </AlertDescription>
                 <Button
                   onClick={handleReset}
-                  disabled={resetting}
+                  disabled={!canManageWhatsApp || resetting}
                   size="sm"
                   className="mt-3 bg-amber-600 hover:bg-amber-700 text-white"
                 >
@@ -496,7 +506,7 @@ export function WhatsAppConfig() {
                 variant="outline"
                 size="sm"
                 onClick={handleVerifyRegistration}
-                disabled={verifyingRegistration}
+                disabled={!canManageWhatsApp || verifyingRegistration}
                 className="border-border bg-transparent text-foreground hover:bg-muted h-7"
               >
                 {verifyingRegistration ? (
@@ -698,7 +708,7 @@ export function WhatsAppConfig() {
         <div className="flex flex-wrap gap-3">
           <Button
             onClick={handleSave}
-            disabled={saving}
+            disabled={!canManageWhatsApp || saving}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {saving ? (
@@ -713,7 +723,7 @@ export function WhatsAppConfig() {
           <Button
             variant="outline"
             onClick={handleTestConnection}
-            disabled={testing || !config}
+            disabled={!canManageWhatsApp || testing || !config}
             className="border-border text-muted-foreground hover:text-foreground hover:bg-muted"
           >
             {testing ? (
@@ -732,7 +742,7 @@ export function WhatsAppConfig() {
             <Button
               variant="outline"
               onClick={handleReset}
-              disabled={resetting}
+              disabled={!canManageWhatsApp || resetting}
               className="border-red-900 text-red-400 hover:text-red-300 hover:bg-red-950/40"
             >
               {resetting ? (

@@ -127,7 +127,7 @@ function emptyButton(type: TemplateButton['type']): TemplateButton {
 export function TemplateManager() {
   const t = useTranslations('Settings.templates');
   const supabase = createClient();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, canEditSettings } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState<MessageTemplate[]>([]);
@@ -491,13 +491,13 @@ export function TemplateManager() {
             <Button
               variant="outline"
               onClick={handleSyncFromMeta}
-              disabled={syncing}
+              disabled={!canEditSettings || syncing}
               title={t('syncTitle')}
             >
               <RefreshCw className={`size-4 ${syncing ? 'animate-spin' : ''}`} />
               {syncing ? t('syncing') : t('syncFromMeta')}
             </Button>
-            <Button onClick={openCreate}>
+            <Button onClick={openCreate} disabled={!canEditSettings}>
               <Plus className="size-4" />
               {t('newTemplate')}
             </Button>
@@ -576,6 +576,7 @@ export function TemplateManager() {
                         variant="ghost"
                         size="sm"
                         onClick={() => openEdit(template)}
+                        disabled={!canEditSettings}
                         title={t('editTitle')}
                         aria-label={t('editLabel')}
                         className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-8 px-2"
@@ -589,6 +590,7 @@ export function TemplateManager() {
                         variant="ghost"
                         size="sm"
                         onClick={() => openEdit(template)}
+                        disabled={!canEditSettings}
                         title={t('resubmitTitle')}
                         aria-label={t('resubmitLabel')}
                         className="text-muted-foreground hover:text-primary hover:bg-primary/10 h-8 px-2"
@@ -601,7 +603,7 @@ export function TemplateManager() {
                       variant="ghost"
                       size="icon"
                       onClick={() => setTemplateToDelete(template)}
-                      disabled={deletingId === template.id}
+                      disabled={!canEditSettings || deletingId === template.id}
                       aria-label={
                         template.meta_template_id
                           ? t('deleteMetaLocallyAria')

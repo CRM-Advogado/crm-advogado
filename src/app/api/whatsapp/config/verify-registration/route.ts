@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { requireRole, toErrorResponse } from '@/lib/auth/account'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import {
   getSubscribedApps,
@@ -24,36 +24,18 @@ import {
  *                    /register last succeeded; NULL means the
  *                    number was saved but never actually subscribed
  *
- * Returns 200 in every case so the UI can render diagnostic detail
+ * Returns 200 for authorized diagnostic requests so the UI can render detail
  * rather than a generic error toast. The combined `live` flag is
  * what the UI badges on.
  */
 export async function GET() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-  if (authError || !user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  let context: Awaited<ReturnType<typeof requireRole>>
+  try {
+    context = await requireRole('admin')
+  } catch (error) {
+    return toErrorResponse(error)
   }
-
-  // whatsapp_config is one-row-per-account post-017. Resolve the
-  // caller's account_id so a teammate who joined an existing account
-  // sees the same registration state as the admin who set it up.
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('account_id')
-    .eq('user_id', user.id)
-    .maybeSingle()
-  const accountId = profile?.account_id as string | undefined
-  if (!accountId) {
-    return NextResponse.json({
-      live: false,
-      checks: { config_exists: false },
-      message: 'Your profile is not linked to an account.',
-    })
-  }
+  const { supabase, accountId } = context
 
   const { data: config } = await supabase
     .from('whatsapp_config')

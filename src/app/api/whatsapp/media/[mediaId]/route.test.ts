@@ -14,7 +14,12 @@ function mockSupabase(owned: boolean, accountId = 'acct-1') {
   const profileQuery = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
-    maybeSingle: vi.fn().mockResolvedValue({ data: { account_id: accountId } }),
+    maybeSingle: vi.fn().mockResolvedValue({ data: { account_id: accountId, account_role: 'viewer' } }),
+  }
+  const accountQuery = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue({ data: { id: accountId, name: 'Test account' } }),
   }
   const messageQuery = {
     select: vi.fn().mockReturnThis(),
@@ -34,7 +39,7 @@ function mockSupabase(owned: boolean, accountId = 'acct-1') {
       },
     }),
   }
-  const queries = { profiles: profileQuery, messages: messageQuery, whatsapp_config: configQuery }
+  const queries = { profiles: profileQuery, accounts: accountQuery, messages: messageQuery, whatsapp_config: configQuery }
   vi.mocked(createClient).mockResolvedValue({
     auth: { getUser: async () => ({ data: { user: { id: 'user-1' } } }) },
     from: (table: keyof typeof queries) => queries[table],
