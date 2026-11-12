@@ -18,6 +18,7 @@ const h = vi.hoisted(() => ({
     } | null,
     ownedCustomField: null as { id: string } | null,
     automations: [] as Record<string, unknown>[],
+    conversations: [] as Record<string, string>[],
     steps: [] as Record<string, unknown>[],
     fromCalls: [] as string[],
     updateCalls: [] as {
@@ -27,6 +28,7 @@ const h = vi.hoisted(() => ({
     upsertCalls: [] as { table: string; payload: unknown }[],
     logInserts: [] as Record<string, unknown>[],
     logUpdates: [] as Record<string, unknown>[],
+    pendingUpdates: [] as unknown[],
     zapsignDocInserts: [] as Record<string, unknown>[],
     zapsignDocUpdates: [] as Record<string, unknown>[],
     zapsignDocDeletes: [] as [string, string, unknown][][],
@@ -62,8 +64,21 @@ vi.mock('./admin-client', () => {
       }
       return { data: null, error: null };
     }
-    if (table === 'automations')
-      return { data: state.automations, error: null };
+    if (table === 'automations') {
+      const data = ops.filters.some(([, key]) => key === 'id')
+        ? state.automations.find(row => ops.filters.every(([, key, value]) => row[key] === value))
+        : state.automations;
+      return { data: data ?? null, error: null };
+    }
+    if (table === 'conversations') {
+      const data = state.conversations.find(row =>
+        ops.filters.every(([, key, value]) => row[key] === value)
+      );
+      return { data: data ?? null, error: null };
+    }
+    if (table === 'automation_pending_executions' && type === 'update') {
+      state.pendingUpdates.push({ payload: ops.payload, filters: ops.filters });
+    }
     if (table === 'automation_logs') {
       if (type === 'insert') {
         state.logInserts.push(ops.payload as Record<string, unknown>);
@@ -179,7 +194,7 @@ vi.mock('@/lib/zapsign/client', async () => {
   };
 });
 
-import { runAutomationsForTrigger, triggerMatches } from './engine';
+import { resumePendingExecution, runAutomationsForTrigger, triggerMatches } from './engine';
 import { MAX_DEAL_CHAIN_DEPTH } from '@/lib/deals/deal-chain';
 import { getZapsignCredentials } from '@/lib/zapsign/credentials';
 import {
@@ -197,12 +212,14 @@ beforeEach(() => {
   h.state.owned = null;
   h.state.ownedCustomField = null;
   h.state.automations = [];
+  h.state.conversations = [];
   h.state.steps = [];
   h.state.fromCalls = [];
   h.state.updateCalls = [];
   h.state.upsertCalls = [];
   h.state.logInserts = [];
   h.state.logUpdates = [];
+  h.state.pendingUpdates = [];
   h.state.zapsignDocInserts = [];
   h.state.zapsignDocUpdates = [];
   h.state.zapsignDocDeletes = [];
@@ -212,6 +229,27 @@ beforeEach(() => {
 });
 
 describe('runAutomationsForTrigger — tenant isolation', () => {
+  it.each([
+    { account_id: 'foreign-account', contact_id: 'c1' },
+    { account_id: ACCOUNT, contact_id: 'other-contact' },
+  ])('rejects an explicit conversation outside the dispatch scope (%j)', async (scope) => {
+    h.state.owned = { id: 'c1' };
+    h.state.conversations = [{ id: 'foreign', ...scope }];
+    h.state.automations = [automationWithUpdateStep()];
+    h.state.steps = [messageStep('Olá')];
+
+    await runAutomationsForTrigger({
+      accountId: ACCOUNT,
+      triggerType: 'new_message_received',
+      contactId: 'c1',
+      context: { conversation_id: 'foreign' },
+    });
+
+    expect(h.state.fromCalls).not.toContain('automation_steps');
+    expect(h.state.logInserts).toHaveLength(0);
+    expect(engineSendText).not.toHaveBeenCalled();
+  });
+
   it('refuses to dispatch when the contact is not in the account (GHSA-63cv-2c49-m5v3)', async () => {
     // Ownership lookup returns nothing — the contact belongs to another tenant.
     h.state.owned = null;
@@ -262,6 +300,50 @@ describe('runAutomationsForTrigger — tenant isolation', () => {
     const filters = h.state.updateCalls[0].filters;
     expect(filters).toContainEqual(['eq', 'id', 'c1']);
     expect(filters).toContainEqual(['eq', 'account_id', ACCOUNT]);
+  });
+});
+
+describe('resumePendingExecution — conversation context', () => {
+  const pending = {
+    id: 'pending-1',
+    automation_id: 'a1',
+    user_id: 'u1',
+    account_id: ACCOUNT,
+    contact_id: 'c1',
+    log_id: null,
+    parent_step_id: null,
+    branch: null,
+    next_step_position: 1,
+    context: { conversation_id: 'conv1' },
+  };
+
+  beforeEach(() => {
+    h.state.automations = [automationWithUpdateStep()];
+    h.state.steps = [messageStep('Retomando')];
+  });
+
+  it('marks the pending execution failed before reading steps or sending', async () => {
+    h.state.conversations = [{ id: 'conv1', account_id: ACCOUNT, contact_id: 'other' }];
+
+    await resumePendingExecution(pending);
+
+    expect(h.state.fromCalls).not.toContain('automation_steps');
+    expect(engineSendText).not.toHaveBeenCalled();
+    expect(h.state.pendingUpdates).toEqual([{
+      payload: { status: 'failed' },
+      filters: [['eq', 'id', pending.id], ['eq', 'account_id', ACCOUNT]],
+    }]);
+  });
+
+  it('sends and completes when the account and contact own the saved conversation', async () => {
+    h.state.conversations = [{ id: 'conv1', account_id: ACCOUNT, contact_id: 'c1' }];
+
+    await resumePendingExecution(pending);
+
+    expect(engineSendText).toHaveBeenCalledWith(expect.objectContaining({
+      accountId: ACCOUNT, contactId: 'c1', conversationId: 'conv1',
+    }));
+    expect(h.state.pendingUpdates).toEqual([expect.objectContaining({ payload: { status: 'done' } })]);
   });
 });
 
@@ -891,6 +973,10 @@ function messageStep(text: string) {
 }
 
 describe('send_message — tokens {{ contact.name }} / {{ contact.first_name }}', () => {
+  beforeEach(() => {
+    h.state.conversations = [{ id: 'conv1', account_id: ACCOUNT, contact_id: 'c1' }];
+  });
+
   it('resolve o nome completo vindo da consulta de posse', async () => {
     h.state.owned = { id: 'c1', name: 'Maria Silva Santos' };
     h.state.automations = [automationWithUpdateStep()];
@@ -981,6 +1067,10 @@ function signatureStep(overrides: Record<string, unknown> = {}) {
 }
 
 describe('send_signature_request', () => {
+  beforeEach(() => {
+    h.state.conversations = [{ id: 'conv1', account_id: ACCOUNT, contact_id: 'c1' }];
+  });
+
   it('creates the ZapSign document, records it, and sends the link over WhatsApp', async () => {
     h.state.owned = { id: 'c1', name: 'Lead Test', phone: '5511999999999' };
     h.state.automations = [automationWithUpdateStep()];
@@ -1162,6 +1252,7 @@ describe('send_signature_request', () => {
   // falha sem gerar documento nenhum. Resolver depois deixava um
   // documento pago no ZapSign e uma linha `pending` que ninguém fecha.
   it('fails before spending a ZapSign call when the contact has no conversation', async () => {
+    h.state.conversations = [];
     h.state.owned = { id: 'c1', name: 'Lead Test', phone: '5511999999999' };
     h.state.automations = [automationWithUpdateStep()];
     h.state.steps = [signatureStep()];
