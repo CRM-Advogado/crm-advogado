@@ -42,6 +42,11 @@ import { useTranslations } from "next-intl";
  */
 type RawContact = Contact & { contact_tags?: { tags: Tag | null }[] };
 type RawDeal = Omit<Deal, "contact"> & { contact?: RawContact | null };
+type BoardData = { id: string; stages: PipelineStage[]; deals: Deal[] };
+
+const DEAL_SELECT =
+  "*, contact:contacts(*, contact_tags(tags(*))), assignee:profiles!deals_assigned_to_fkey(*)";
+const EMPTY_STAGES: PipelineStage[] = [];
 
 function normalizeDeals(rows: RawDeal[]): Deal[] {
   return rows.map((raw) => {
@@ -71,15 +76,17 @@ const SPEC_DEFAULT_STAGES = [
 
 export default function PipelinesPage() {
   const t = useTranslations("Pipelines.page");
+  const tNavigation = useTranslations("Sidebar");
   const supabase = createClient();
   const canEditSettings = useCan("edit-settings");
   const canCreateDeals = useCan("send-messages");
-  const { accountId } = useAuth();
+  const { accountId, profileLoading } = useAuth();
 
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string>("");
-  const [stages, setStages] = useState<PipelineStage[]>([]);
-  const [deals, setDeals] = useState<Deal[]>([]);
+  const [board, setBoard] = useState<BoardData | null>(null);
+  const activeBoard = board?.id === selectedPipelineId ? board : null;
+  const stages = activeBoard?.stages ?? EMPTY_STAGES;
   const [loading, setLoading] = useState(true);
 
   // Dialog / sheet state
@@ -96,15 +103,17 @@ export default function PipelinesPage() {
 
   // Guard against double-seeding (React StrictMode double-effect in dev).
   const seedAttempted = useRef(false);
+  const initialBoard = useRef<Promise<BoardData | null> | null>(null);
 
   const loadPipelines = useCallback(async () => {
     const { data, error } = await supabase
       .from("pipelines")
       .select("*")
-      .order("created_at");
+      .order("created_at")
+      .order("id");
     if (error) {
       console.error("Failed to load pipelines:", error.message);
-      return [];
+      return null;
     }
     return data ?? [];
   }, [supabase]);
@@ -125,15 +134,36 @@ export default function PipelinesPage() {
     async (pipelineId: string) => {
       const { data } = await supabase
         .from("deals")
-        .select(
-          "*, contact:contacts(*, contact_tags(tags(*))), assignee:profiles!deals_assigned_to_fkey(*)",
-        )
+        .select(DEAL_SELECT)
         .eq("pipeline_id", pipelineId)
         .order("created_at", { ascending: false });
       return normalizeDeals((data ?? []) as RawDeal[]);
     },
     [supabase],
   );
+
+  const loadBoard = useCallback(async (pipelineId?: string): Promise<BoardData | null> => {
+    let query = supabase
+      .from("pipelines")
+      .select(`id, stages:pipeline_stages!pipeline_stages_pipeline_id_fkey(*), deals:deals!deals_pipeline_id_fkey(${DEAL_SELECT})`)
+      .order("position", { referencedTable: "stages" })
+      .order("created_at", { referencedTable: "deals", ascending: false });
+    query = pipelineId
+      ? query.eq("id", pipelineId)
+      : query.order("created_at").order("id").limit(1);
+
+    const { data, error } = await query.maybeSingle();
+    if (error) {
+      console.error("Failed to load pipeline board:", error.message);
+      return null;
+    }
+    if (!data) return null;
+    return {
+      id: data.id,
+      stages: data.stages as PipelineStage[],
+      deals: normalizeDeals(data.deals as RawDeal[]),
+    };
+  }, [supabase]);
 
   const seedDefaultPipeline = useCallback(async (): Promise<Pipeline | null> => {
     const {
@@ -166,17 +196,24 @@ export default function PipelinesPage() {
     return pipeline as Pipeline;
   }, [supabase, accountId]);
 
-  // Initial load + seed-if-empty
+  // The oldest pipeline is known by the same ordering as the selector.
+  // Start its board alongside the list, and reuse it only if the IDs agree.
   useEffect(() => {
+    if (profileLoading) return;
     let cancelled = false;
     (async () => {
       setLoading(true);
-      let list = await loadPipelines();
+      const boardRequest = loadBoard();
+      const result = await loadPipelines();
+      if (cancelled) return;
+      let list = result ?? [];
 
-      if (list.length === 0 && !seedAttempted.current) {
+      if (result && list.length === 0 && accountId && canEditSettings && !seedAttempted.current) {
         seedAttempted.current = true;
         const seeded = await seedDefaultPipeline();
-        if (seeded) list = await loadPipelines();
+        if (seeded) list = (await loadPipelines()) ?? [];
+      } else if (list.length > 0) {
+        initialBoard.current = boardRequest;
       }
 
       if (cancelled) return;
@@ -193,37 +230,31 @@ export default function PipelinesPage() {
     return () => {
       cancelled = true;
     };
-  }, [loadPipelines, seedDefaultPipeline]);
+  }, [accountId, canEditSettings, loadBoard, loadPipelines, profileLoading, seedDefaultPipeline]);
 
-  // Load stages + deals whenever selected pipeline changes.
-  // Clearing on no-selection is a legitimate sync with URL/prop
-  // state; the load completion uses async setters inside promise
-  // callbacks (not synchronous in the effect body).
   useEffect(() => {
-    if (!selectedPipelineId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setStages([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setDeals([]);
-      return;
-    }
+    if (!selectedPipelineId) return;
     let cancelled = false;
+    const pending = initialBoard.current;
+    initialBoard.current = null;
     (async () => {
-      const [s, d] = await Promise.all([
-        loadStages(selectedPipelineId),
-        loadDeals(selectedPipelineId),
-      ]);
+      const prefetched = pending ? await pending : null;
       if (cancelled) return;
-      setStages(s);
-      setDeals(d);
+      const next = prefetched?.id === selectedPipelineId
+        ? prefetched
+        : await loadBoard(selectedPipelineId);
+      if (cancelled) return;
+      if (!next) toast.error(t("toastFailedLoadPipelines"));
+      setBoard(next ?? { id: selectedPipelineId, stages: EMPTY_STAGES, deals: [] });
     })();
     return () => {
       cancelled = true;
     };
-  }, [selectedPipelineId, loadStages, loadDeals]);
+  }, [selectedPipelineId, loadBoard, t]);
 
   const refreshPipelines = useCallback(async () => {
     const list = await loadPipelines();
+    if (!list) return;
     setPipelines(list);
     if (list.length === 0) setSelectedPipelineId("");
     else if (!list.some((p) => p.id === selectedPipelineId))
@@ -232,20 +263,23 @@ export default function PipelinesPage() {
 
   const refreshStages = useCallback(async () => {
     if (!selectedPipelineId) return;
-    setStages(await loadStages(selectedPipelineId));
+    const next = await loadStages(selectedPipelineId);
+    setBoard((prev) => prev?.id === selectedPipelineId ? { ...prev, stages: next } : prev);
   }, [loadStages, selectedPipelineId]);
 
   const refreshDeals = useCallback(async () => {
     if (!selectedPipelineId) return;
-    setDeals(await loadDeals(selectedPipelineId));
+    const next = await loadDeals(selectedPipelineId);
+    setBoard((prev) => prev?.id === selectedPipelineId ? { ...prev, deals: next } : prev);
   }, [loadDeals, selectedPipelineId]);
 
   const handleDealMoved = useCallback(
     async (dealId: string, newStageId: string) => {
       // Optimistic update — board already animated; just persist.
-      setDeals((prev) =>
-        prev.map((d) => (d.id === dealId ? { ...d, stage_id: newStageId } : d)),
-      );
+      setBoard((prev) => prev?.id === selectedPipelineId ? {
+        ...prev,
+        deals: prev.deals.map((d) => (d.id === dealId ? { ...d, stage_id: newStageId } : d)),
+      } : prev);
       // Passa pelo servidor em vez de gravar direto no Supabase.
       //
       // A escrita direta funcionava, mas era justamente por causa dela
@@ -270,7 +304,7 @@ export default function PipelinesPage() {
         refreshDeals();
       }
     },
-    [refreshDeals, t],
+    [refreshDeals, selectedPipelineId, t],
   );
 
   const handleAddDeal = useCallback(
@@ -338,30 +372,19 @@ export default function PipelinesPage() {
 
   const selectedPipeline = pipelines.find((p) => p.id === selectedPipelineId);
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-          <div className="h-9 w-28 animate-pulse rounded-lg bg-muted" />
-        </div>
-        <div className="flex gap-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-96 w-72 animate-pulse rounded-xl bg-muted/50" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      {/* Header */}
+      <header className="crm-enter border-b border-border pb-5">
+        <h1 className="crm-title text-3xl text-foreground sm:text-4xl">
+          {tNavigation("pipelines")}
+        </h1>
+      </header>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           {/* Pipeline selector dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger
+              disabled={loading}
               className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors data-[popup-open]:bg-muted"
             >
               <GitBranch className="h-4 w-4 text-primary" />
@@ -394,7 +417,7 @@ export default function PipelinesPage() {
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator className="bg-border" />
-              {selectedPipeline && (
+              {activeBoard && (
                 <DropdownMenuItem
                   onClick={() => setSettingsOpen(true)}
                   className="text-popover-foreground"
@@ -407,11 +430,12 @@ export default function PipelinesPage() {
           </DropdownMenu>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <GatedButton
             variant="outline"
             canAct={canEditSettings}
             gateReason="create pipelines"
+            disabled={loading}
             onClick={() => setNewPipelineOpen(true)}
             className="border-border bg-card text-foreground hover:bg-muted"
           >
@@ -432,10 +456,16 @@ export default function PipelinesPage() {
       </div>
 
       {/* Board */}
-      {pipelines.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border py-20">
+      {loading || (selectedPipelineId && !activeBoard) ? (
+        <div className="flex gap-3 overflow-hidden" aria-hidden="true">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-96 w-72 shrink-0 animate-pulse rounded-xl bg-muted/50" />
+          ))}
+        </div>
+      ) : !activeBoard ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card py-20">
           <GitBranch className="h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-medium text-foreground">
+          <h3 className="mt-4 font-serif text-2xl text-foreground">
             {t("noPipelinesYet")}
           </h3>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -453,10 +483,10 @@ export default function PipelinesPage() {
         </div>
       ) : (
         <>
-          <PipelineAnalytics stages={stages} deals={deals} />
+          <PipelineAnalytics stages={stages} deals={activeBoard.deals} />
           <PipelineBoard
             stages={stages}
-            deals={deals}
+            deals={activeBoard.deals}
             onDealMoved={handleDealMoved}
             onAddDeal={handleAddDeal}
             onEditDeal={handleEditDeal}
@@ -505,7 +535,7 @@ export default function PipelinesPage() {
       </Dialog>
 
       {/* Pipeline Settings */}
-      {selectedPipeline && (
+      {selectedPipeline && activeBoard && (
         <PipelineSettings
           open={settingsOpen}
           onOpenChange={setSettingsOpen}

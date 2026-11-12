@@ -1,3 +1,4 @@
+import { sendOutbound, canTryRecipientVariant } from '@/lib/whatsapp/providers/send-outbound';
 // ============================================================
 // Public-API broadcast core.
 //
@@ -18,13 +19,15 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { sendTemplateMessage } from '@/lib/whatsapp/meta-api';
+import { resolveLegacyMetaProvider } from '@/lib/whatsapp/providers/legacy-meta-connection';
+import { type WhatsAppProvider } from '@/lib/whatsapp/providers/domain';
+import { toTemplateMessage } from '@/lib/whatsapp/providers/legacy-template';
 import { decrypt } from '@/lib/whatsapp/encryption';
 import {
   sanitizePhoneForMeta,
   isValidE164,
   phoneVariants,
-  isRecipientNotAllowedError,
+
 } from '@/lib/whatsapp/phone-utils';
 import { isMessageTemplate } from '@/lib/whatsapp/template-row-guard';
 import type { MessageTemplate } from '@/types';
@@ -63,11 +66,11 @@ interface PlannedRecipient {
 }
 
 export interface BroadcastPlan {
+  accountId: string;
   broadcastId: string;
   templateName: string;
   templateLanguage: string;
-  phoneNumberId: string;
-  accessToken: string;
+  provider: WhatsAppProvider;
   templateRow: MessageTemplate | null;
   planned: PlannedRecipient[];
   /** Phones rejected up front (invalid E.164) — counted as failed. */
@@ -124,6 +127,7 @@ export async function createBroadcast(
     );
   }
   const accessToken = decrypt(config.access_token);
+  const provider = resolveLegacyMetaProvider(accountId, config, accessToken);
 
   // Template row (once) for header/button components; guard a
   // malformed local row rather than N identical opaque failures.
@@ -235,11 +239,11 @@ export async function createBroadcast(
   });
 
   return {
+    accountId,
     broadcastId: broadcast.id,
     templateName,
     templateLanguage,
-    phoneNumberId: config.phone_number_id,
-    accessToken,
+    provider,
     templateRow,
     planned,
     rejected,
@@ -263,6 +267,7 @@ export async function deliverBroadcast(
   db: SupabaseClient,
   plan: BroadcastPlan
 ): Promise<void> {
+  const provider = plan.provider;
   let sentCount = 0;
 
   for (const recipient of plan.planned) {
@@ -272,23 +277,21 @@ export async function deliverBroadcast(
 
     for (const variant of variants) {
       try {
-        const result = await sendTemplateMessage({
-          phoneNumberId: plan.phoneNumberId,
-          accessToken: plan.accessToken,
+        const result = await sendOutbound(plan.accountId, provider, toTemplateMessage(provider.connection, {
           to: variant,
           templateName: plan.templateName,
           language: plan.templateLanguage,
           template: plan.templateRow ?? undefined,
           params: recipient.params,
-        });
-        sentMessageId = result.messageId;
+        }));
+        sentMessageId = result.value;
         lastError = null;
         break;
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown error';
         lastError = message;
         // Only a "recipient not allowed" error is worth another variant.
-        if (!isRecipientNotAllowedError(message)) break;
+        if (!canTryRecipientVariant(error)) break;
       }
     }
 

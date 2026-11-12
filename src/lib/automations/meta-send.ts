@@ -1,4 +1,6 @@
-import { sendTextMessage, sendTemplateMessage } from '@/lib/whatsapp/meta-api'
+import { sendOutbound, canTryRecipientVariant } from '@/lib/whatsapp/providers/send-outbound';
+import { resolveLegacyMetaProvider } from '@/lib/whatsapp/providers/legacy-meta-connection';
+import { toTemplateMessage } from '@/lib/whatsapp/providers/legacy-template';
 import type { InteractiveMessagePayload } from '@/lib/whatsapp/interactive'
 import {
   engineSendInteractiveButtons,
@@ -9,7 +11,7 @@ import {
   sanitizePhoneForMeta,
   isValidE164,
   phoneVariants,
-  isRecipientNotAllowedError,
+
 } from '@/lib/whatsapp/phone-utils'
 import { supabaseAdmin } from './admin-client'
 
@@ -142,25 +144,23 @@ async function sendViaMeta(input: SendInput): Promise<{ whatsapp_message_id: str
 
   const accessToken = decrypt(config.access_token)
 
+  const provider = resolveLegacyMetaProvider(input.accountId, config, accessToken);
+
   const attempt = async (phone: string): Promise<string> => {
     if (input.kind === 'template') {
-      const r = await sendTemplateMessage({
-        phoneNumberId: config.phone_number_id,
-        accessToken,
+      const r = await sendOutbound(input.accountId, provider, toTemplateMessage(provider.connection, {
         to: phone,
         templateName: input.templateName,
         language: input.language,
         params: input.params,
-      })
-      return r.messageId
+      }))
+      return r.value
     }
-    const r = await sendTextMessage({
-      phoneNumberId: config.phone_number_id,
-      accessToken,
+    const r = await sendOutbound(input.accountId, provider, { kind: 'text',
       to: phone,
       text: input.text,
     })
-    return r.messageId
+    return r.value
   }
 
   // Same phone-variant retry as /api/whatsapp/send — Meta sandbox and
@@ -177,8 +177,8 @@ async function sendViaMeta(input: SendInput): Promise<{ whatsapp_message_id: str
       lastError = null
       break
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      if (!isRecipientNotAllowedError(msg)) throw err
+
+      if (!canTryRecipientVariant(err)) throw err
       lastError = err
     }
   }

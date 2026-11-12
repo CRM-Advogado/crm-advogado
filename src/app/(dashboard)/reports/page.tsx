@@ -136,28 +136,29 @@ export default function ReportsPage() {
   }, [])
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
+    <div className="min-w-0 space-y-6">
+      <header className="crm-enter border-b border-border pb-5">
+        <h1 className="crm-title text-3xl text-foreground sm:text-4xl">{t('title')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t('description')}</p>
-      </div>
+      </header>
 
       <section className="rounded-xl border border-border bg-card">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
           <div>
-            <h2 className="text-sm font-semibold text-foreground">{t('tableTitle')}</h2>
+            <h2 className="font-serif text-xl leading-tight text-foreground">{t('tableTitle')}</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">{t('tableHint')}</p>
           </div>
-          <div className="flex items-center gap-1 rounded-lg bg-muted/60 p-1">
+          <div className="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-muted/60 p-1">
             {PERIOD_KEYS.map((p) => (
               <button
                 key={p}
                 type="button"
                 onClick={() => changePeriod(p)}
+                aria-pressed={period === p}
                 className={cn(
-                  'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                  'rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                   period === p
-                    ? 'bg-secondary text-secondary-foreground'
+                    ? 'bg-accent text-accent-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -170,12 +171,12 @@ export default function ReportsPage() {
         {loading ? (
           <div className="space-y-2 p-5">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-10 animate-pulse rounded-md bg-muted" />
+              <div key={i} className="h-10 motion-safe:animate-pulse rounded-md bg-muted" />
             ))}
           </div>
         ) : error ? (
           <div className="p-5">
-            <p className="text-sm text-red-400">{t('loadFailed')}</p>
+            <p className="text-sm text-destructive">{t('loadFailed')}</p>
             <p className="mt-1 font-mono text-xs break-all text-muted-foreground">{error}</p>
             <button
               type="button"
@@ -189,7 +190,7 @@ export default function ReportsPage() {
           <EmptyState t={t} hasBaseline={!!baseline} baselineLeads={baseline?.leads ?? 0} />
         ) : (
           <Table>
-            <TableHeader>
+            <TableHeader className="bg-card-2">
               <TableRow>
                 <TableHead className="min-w-[220px]">{t('colCreative')}</TableHead>
                 {COLUMNS.map((col) => (
@@ -242,7 +243,7 @@ export default function ReportsPage() {
               ))}
             </TableBody>
 
-            <TableFooter>
+            <TableFooter className="bg-card-2">
               <TableRow>
                 <TableCell className="font-medium">{t('totalAds')}</TableCell>
                 <TableCell className="text-right tabular-nums">{summary.leads}</TableCell>
@@ -392,7 +393,7 @@ function Money({
   if (currency) return <>{formatCurrency(value, currency)}</>
   return (
     <span className="inline-flex items-center gap-1" title={`${mixedLabel} (${currencies.join(', ')})`}>
-      <AlertTriangle className="size-3 text-amber-400" aria-hidden />
+      <AlertTriangle className="size-3 text-amber-800 dark:text-amber-300" aria-hidden />
       {value.toLocaleString()}
     </span>
   )
@@ -409,8 +410,8 @@ function EmptyState({
 }) {
   return (
     <div className="px-5 py-12 text-center">
-      <Megaphone className="mx-auto size-6 text-muted-foreground" />
-      <p className="mt-3 text-sm font-medium text-foreground">{t('emptyTitle')}</p>
+      <Megaphone className="mx-auto size-10 rounded-lg bg-accent p-2 text-accent-foreground" />
+      <p className="mt-3 font-serif text-xl text-foreground">{t('emptyTitle')}</p>
       <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
         {hasBaseline
           ? t('emptyWithBaseline', { count: baselineLeads })

@@ -33,6 +33,7 @@ import { ConversationsChart } from '@/components/dashboard/conversations-chart'
 import { PipelineDonut } from '@/components/dashboard/pipeline-donut'
 import { ResponseTimeChart } from '@/components/dashboard/response-time-chart'
 import { ActivityFeed } from '@/components/dashboard/activity-feed'
+import { BrandAmbient } from '@/components/layout/brand-ambient'
 
 import { useTranslations } from 'next-intl'
 
@@ -40,9 +41,13 @@ type RangeDays = 7 | 30 | 90
 
 export default function DashboardPage() {
   const t = useTranslations('Dashboard.page')
-  const { defaultCurrency } = useAuth()
-  const [metrics, setMetrics] = useState<MetricsBundle | null>(null)
-  const [metricsLoading, setMetricsLoading] = useState(true)
+  const { accountId, defaultCurrency, profileLoading } = useAuth()
+  const [metricsResult, setMetricsResult] = useState<{
+    accountId: string
+    data: MetricsBundle | null
+  } | null>(null)
+  const metrics = metricsResult?.accountId === accountId ? metricsResult.data : null
+  const metricsLoading = profileLoading || (!!accountId && metricsResult?.accountId !== accountId)
 
   const [range, setRange] = useState<RangeDays>(30)
   // Keep a cache per range so switching tabs doesn't re-fetch what we
@@ -64,17 +69,27 @@ export default function DashboardPage() {
   const [activity, setActivity] = useState<ActivityItem[] | null>(null)
   const [activityLoading, setActivityLoading] = useState(true)
 
+  useEffect(() => {
+    if (!accountId) return
+    let cancelled = false
+    void loadMetrics(createClient(), accountId)
+      .then((data) => {
+        if (!cancelled) setMetricsResult({ accountId, data })
+      })
+      .catch((err) => {
+        if (cancelled) return
+        console.error('[dashboard] metrics failed:', err)
+        setMetricsResult({ accountId, data: null })
+      })
+    return () => { cancelled = true }
+  }, [accountId])
+
   const loadAll = useCallback(() => {
     const db = createClient()
 
     // Kick everything off in parallel. Each block has its own
     // setState + finally so a slow query doesn't hold up faster
     // sections — each widget shows its own skeleton independently.
-    void loadMetrics(db)
-      .then((m) => setMetrics(m))
-      .catch((err) => console.error('[dashboard] metrics failed:', err))
-      .finally(() => setMetricsLoading(false))
-
     void loadConversationsSeries(db, 30)
       .then((s) => setSeries((prev) => ({ ...prev, 30: s })))
       .catch((err) => console.error('[dashboard] series failed:', err))
@@ -122,25 +137,33 @@ export default function DashboardPage() {
   )
 
   return (
-    <div className="space-y-5">
+    <div className="min-w-0 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {t('description')}
-        </p>
-      </div>
+      <header className="crm-ambient relative isolate overflow-hidden rounded-xl px-5 py-6 text-ambient-foreground sm:px-7">
+        <BrandAmbient />
+        <div className="crm-enter relative z-10">
+          <h1 className="crm-title text-3xl sm:text-4xl">{t('title')}</h1>
+          <p className="mt-2 max-w-prose text-sm leading-relaxed text-ambient-foreground/90">
+            {t('description')}
+          </p>
+        </div>
+      </header>
 
       {/* Metric cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {metricsLoading || !metrics ? (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {metricsLoading ? (
           Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+        ) : !metrics ? (
+          <p role="status" className="col-span-full rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+            {t('metricsUnavailable')}
+          </p>
         ) : (
           <>
             <MetricCard
               title={t('activeConversations')}
               value={metrics.activeConversations.current.toLocaleString()}
               icon={MessageSquare}
+              accent="primary"
               delta={{
                 sign: metrics.activeConversations.previous,
                 label: deltaLabel(
@@ -154,6 +177,7 @@ export default function DashboardPage() {
               title={t('newContactsToday')}
               value={metrics.newContactsToday.current.toLocaleString()}
               icon={UserPlus}
+              accent="emerald"
               delta={{
                 sign:
                   metrics.newContactsToday.current - metrics.newContactsToday.previous,
@@ -168,12 +192,14 @@ export default function DashboardPage() {
               title={t('closedDealsValue')}
               value={formatCurrency(metrics.closedDealsValue, defaultCurrency)}
               icon={DollarSign}
+              accent="amber"
               subtitle={t('closedDeals', { count: metrics.closedDealsCount })}
             />
             <MetricCard
               title={t('messagesSentToday')}
               value={metrics.messagesSentToday.current.toLocaleString()}
               icon={Send}
+              accent="sky"
               delta={{
                 sign:
                   metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
@@ -199,7 +225,7 @@ export default function DashboardPage() {
           this, the pipeline card rendered at its natural (shorter)
           height while the line chart drove the row height. */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <div className="h-full lg:col-span-3">
+        <div className="h-full min-w-0 lg:col-span-3">
           <ConversationsChart
             series={series}
             loading={seriesLoading}
@@ -207,7 +233,7 @@ export default function DashboardPage() {
             onRangeChange={handleRangeChange}
           />
         </div>
-        <div className="h-full lg:col-span-2">
+        <div className="h-full min-w-0 lg:col-span-2">
           <PipelineDonut
             data={pipeline}
             loading={pipelineLoading}

@@ -1195,11 +1195,11 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
       {/* Top bar. At sub-sm widths the "Active" label is hidden and the
           switch moves to the right of the save button, so the name input
           gets maximum width. */}
-      <header className="border-border bg-card/80 flex flex-shrink-0 items-center gap-2 border-b px-3 py-3 sm:gap-3 sm:px-4">
+      <header className="border-border bg-card flex shrink-0 items-center gap-2 border-b px-3 py-3 sm:gap-3 sm:px-4">
         <button
           type="button"
           onClick={() => router.push('/automations')}
-          className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md transition-colors"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-9 shrink-0 items-center justify-center rounded-lg border border-border transition-colors"
           aria-label={t('backToAutomations')}
         >
           <ArrowLeft className="h-4 w-4" />
@@ -1208,7 +1208,7 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
           value={state.name}
           onChange={(e) => patchTop('name', e.target.value)}
           placeholder={t('untitled')}
-          className="text-foreground placeholder:text-muted-foreground focus:bg-muted min-w-0 flex-1 rounded-md bg-transparent px-2 py-1 text-sm font-semibold focus:outline-none sm:text-base"
+          className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1 font-serif text-base text-foreground placeholder:text-muted-foreground hover:bg-muted focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/30 sm:text-xl"
         />
         <div className="text-muted-foreground flex items-center gap-2 text-xs">
           <span className="hidden sm:inline">{t('active')}</span>
@@ -1229,7 +1229,7 @@ export function AutomationBuilder({ initial }: { initial: BuilderInitial }) {
       </header>
 
       {/* Canvas */}
-      <div className="relative flex-1 overflow-y-auto">
+      <div className="relative flex-1 overflow-y-auto bg-card-2">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle,var(--border)_1px,transparent_1px)] [background-size:20px_20px]" />
         <div className="relative mx-auto flex max-w-2xl flex-col items-center gap-0 px-4 py-10">
           <ResourcesProvider>
@@ -1280,17 +1280,17 @@ function TriggerCard({
     // Card width: full on mobile, fixed 320px on sm+. The canvas wrapper
     // (max-w-2xl + px-4) keeps this tidy on tablet/desktop.
     <div className="z-10 w-full max-w-[320px] sm:w-80">
-      <div className="border-border bg-card rounded-lg border border-l-4 border-l-blue-500 shadow-lg">
+      <div className="border-border bg-card rounded-xl border border-l-4 border-l-blue-500 shadow-sm">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
           className="flex w-full items-center gap-3 px-4 py-3 text-left"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500/10 text-blue-400">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-500/10 text-blue-700 dark:text-blue-300">
             <Zap className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] tracking-wide text-blue-300 uppercase">
+            <div className="text-[11px] tracking-wide text-blue-800 dark:text-blue-300 uppercase">
               {t('trigger')}
             </div>
             <div className="text-foreground truncate text-sm font-medium">
@@ -1760,7 +1760,7 @@ function StepRenderer({
       <div className={cn('z-10 flex flex-col', width)}>
         <div
           className={cn(
-            'border-border bg-card rounded-lg border border-l-4 shadow-lg',
+            'border-border bg-card rounded-xl border border-l-4 shadow-sm',
             meta.border
           )}
         >
@@ -1883,7 +1883,7 @@ function ConditionBranches({
       <BranchColumn label={t('branches.yes')} color="text-primary">
         <StepList {...props} steps={yes} parentPath={yesPath} />
       </BranchColumn>
-      <BranchColumn label={t('branches.no')} color="text-rose-400">
+      <BranchColumn label={t('branches.no')} color="text-rose-700 dark:text-rose-300">
         <StepList {...props} steps={no} parentPath={noPath} />
       </BranchColumn>
     </div>

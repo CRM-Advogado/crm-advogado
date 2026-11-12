@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { BrandAmbient } from "@/components/layout/brand-ambient";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 // Shared metadata for auth pages (login / signup / forgot-password).
 // None of these should be indexed — they'd compete with the marketing
@@ -20,5 +22,13 @@ export const metadata: Metadata = {
 };
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
-  return children;
+  return (
+    <div className="crm-ambient relative isolate flex min-h-svh flex-col">
+      <BrandAmbient />
+      <div className="relative z-20 flex justify-end px-4 pt-4 sm:px-6">
+        <ThemeToggle />
+      </div>
+      {children}
+    </div>
+  );
 }

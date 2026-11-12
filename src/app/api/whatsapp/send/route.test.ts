@@ -144,12 +144,14 @@ vi.mock('@/lib/whatsapp/encryption', () => ({
 }))
 
 const { sendTemplateMessage } = vi.hoisted(() => ({
-  sendTemplateMessage: vi.fn(async () => ({ messageId: 'wamid-1' })),
+  sendTemplateMessage: vi.fn(async () => ({ accountId: 'acct-1', connectionId: 'cfg-1', provider: 'meta_cloud', value: 'wamid-1' })),
 }))
-vi.mock('@/lib/whatsapp/meta-api', () => ({
-  sendTemplateMessage,
-  sendTextMessage: vi.fn(),
-  sendMediaMessage: vi.fn(),
+vi.mock('@/lib/whatsapp/providers/legacy-meta-connection', () => ({
+  resolveLegacyMetaProvider: () => ({
+    connection: { accountId: 'acct-1', connectionId: 'cfg-1', provider: 'meta_cloud' },
+    capabilities: { messages: ['template'] },
+    messaging: { send: sendTemplateMessage },
+  }),
 }))
 
 import { POST } from './route'
@@ -210,7 +212,8 @@ describe('POST /api/whatsapp/send — contact_id template path', () => {
     >
     // Meta wants the bare E.164 digits — sanitizePhoneForMeta strips the '+'.
     expect(args.to).toBe('15551234567')
-    expect(args.templateName).toBe('order_update')
+    expect(args.kind).toBe('template')
+    expect(args.name).toBe('order_update')
 
     // The outbound message was persisted under the new conversation.
     expect(messageInserts).toHaveLength(1)

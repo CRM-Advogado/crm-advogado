@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "output/**",
     ".playwright-cli/**",
     "next-env.d.ts",
+    ".open-next/**",
+    ".wrangler/**",
     // Vendored minified opus-recorder encoder worker (served statically).
     "public/opus/**",
   ]),

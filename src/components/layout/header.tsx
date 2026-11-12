@@ -1,14 +1,11 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useAuth } from "@/hooks/use-auth";
-import { LogOut, Menu, Settings as SettingsIcon, User } from "lucide-react";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/ui/avatar";
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useAuth } from '@/hooks/use-auth';
+import { LogOut, Menu, Settings as SettingsIcon, User } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ThemeToggle } from '@/components/layout/theme-toggle';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,17 +13,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ModeToggle } from "@/components/layout/mode-toggle";
 
 const pageTitles: Record<string, string> = {
-  "/dashboard": "dashboard",
-  "/inbox": "inbox",
-  "/notifications": "notifications",
-  "/contacts": "contacts",
-  "/pipelines": "pipelines",
-  "/broadcasts": "broadcasts",
-  "/automations": "automations",
-  "/settings": "settings",
+  '/dashboard': 'dashboard',
+  '/inbox': 'inbox',
+  '/notifications': 'notifications',
+  '/contacts': 'contacts',
+  '/pipelines': 'pipelines',
+  '/broadcasts': 'broadcasts',
+  '/reports': 'reports',
+  '/automations': 'automations',
+  '/flows': 'flows',
+  '/agents': 'aiAgents',
+  '/settings': 'settings',
 };
 
 function getPageTitleKey(pathname: string): string {
@@ -46,10 +45,12 @@ interface HeaderProps {
 import { useTranslations } from "next-intl";
 
 export function Header({ onOpenSidebar }: HeaderProps) {
-  const t = useTranslations("Header");
+  const t = useTranslations('Header');
+  const tSidebar = useTranslations('Sidebar');
   const pathname = usePathname();
   const { profile, signOut } = useAuth();
   const titleKey = getPageTitleKey(pathname);
+  const Title = pathname === '/inbox' ? 'h1' : 'p';
 
   const initial =
     profile?.full_name?.charAt(0)?.toUpperCase() ??
@@ -57,7 +58,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
     "U";
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-border bg-background px-4 lg:px-6">
+    <header className="border-border bg-background/90 backdrop-blur-md flex h-16 shrink-0 items-center justify-between gap-3 border-b px-4 lg:px-6">
       <div className="flex min-w-0 items-center gap-2">
         {/* Hamburger — mobile only. 44×44 hit target per Apple HIG. */}
         <button
@@ -68,14 +69,13 @@ export function Header({ onOpenSidebar }: HeaderProps) {
         >
           <Menu className="h-5 w-5" />
         </button>
-        <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">
-          {t(titleKey as string)}
-        </h1>
+        <Title className="crm-title text-foreground truncate text-lg sm:text-xl">
+          {tSidebar(titleKey)}
+        </Title>
       </div>
 
       <div className="flex items-center gap-1 sm:gap-2">
-        <ModeToggle />
-
+        <ThemeToggle />
         <DropdownMenu>
         <DropdownMenuTrigger
           className="flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-muted/70 focus:bg-muted/70 focus:outline-none data-popup-open:bg-muted/70 sm:gap-3 sm:pl-1 sm:pr-3"

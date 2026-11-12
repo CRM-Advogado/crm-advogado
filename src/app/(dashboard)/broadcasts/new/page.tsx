@@ -132,15 +132,15 @@ export default function NewBroadcastPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
+      <header className="crm-enter border-b border-border pb-5">
+        <h1 className="crm-title text-3xl sm:text-4xl">{t('title')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {t('subtitle')}
         </p>
-      </div>
+      </header>
 
       {/* Step Indicator */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between rounded-xl border border-border bg-card-2 px-3 py-4 sm:px-4">
         {steps.map((step, index) => {
           const isActive = index === currentStep;
           const isCompleted = index < currentStep;
@@ -153,7 +153,7 @@ export default function NewBroadcastPage() {
                     isCompleted
                       ? 'bg-primary text-primary-foreground'
                       : isActive
-                        ? 'border-2 border-primary bg-primary/10 text-primary'
+                        ? 'border-2 border-primary bg-accent text-accent-foreground'
                         : 'border border-border bg-muted text-muted-foreground'
                   }`}
                 >
@@ -182,7 +182,7 @@ export default function NewBroadcastPage() {
       {/* Step Content */}
       <div className="relative min-h-[400px]">
         <div
-          className="transition-all duration-300 ease-in-out"
+          className="rounded-xl border border-border bg-card p-4 transition-opacity duration-200 motion-reduce:transition-none sm:p-6"
           style={{
             opacity: isProcessing ? 0.6 : 1,
             pointerEvents: isProcessing ? 'none' : 'auto',

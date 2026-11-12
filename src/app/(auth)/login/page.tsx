@@ -13,7 +13,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { UsersRound } from "lucide-react";
 
@@ -75,20 +74,19 @@ function LoginPageInner() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md border-border bg-card">
+    <div className="relative z-10 flex flex-1 items-center justify-center px-4 py-8">
+      <Card className="crm-enter w-full max-w-md border-border bg-card px-1 py-7 shadow-xl shadow-black/10 sm:px-4">
         <CardHeader className="items-center text-center">
           {inviteToken ? (
-            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
               <UsersRound className="h-6 w-6 text-primary" />
             </div>
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src="/logo.svg" alt="" className="mb-2 h-12 w-12" />
+            <span className="crm-mark mx-auto mb-3" aria-hidden="true">c</span>
           )}
-          <CardTitle className="text-xl text-foreground">
+          <h1 className="crm-title text-3xl text-foreground">
             {inviteToken ? t('titleAccept') : t('titleWelcome')}
-          </CardTitle>
+          </h1>
           <CardDescription className="text-muted-foreground">
             {inviteToken
               ? t('descAccept')
@@ -98,7 +96,7 @@ function LoginPageInner() {
         <CardContent>
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             {error && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-destructive">
                 {error}
               </div>
             )}
@@ -114,7 +112,7 @@ function LoginPageInner() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
+                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
               />
             </div>
 
@@ -137,7 +135,7 @@ function LoginPageInner() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
+                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
               />
             </div>
 

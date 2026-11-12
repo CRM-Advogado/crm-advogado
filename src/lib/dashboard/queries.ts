@@ -17,84 +17,49 @@ import type {
   ResponseTimeSummary,
 } from './types'
 
-// ------------------------------------------------------------
-// All client-side aggregation. RLS scopes every query to the
-// signed-in user automatically, so we never pass user_id explicitly
-// here. Perf is acceptable for the current scale (low thousands of
-// messages) — if a tenant's dataset outgrows this, we'd migrate the
-// heavy aggregations to SQL RPCs. Noted in the PR.
-// ------------------------------------------------------------
-
 type DB = SupabaseClient
+type MetricsRow = {
+  open_conversations: number
+  new_open_conversations_today: number
+  new_open_conversations_yesterday: number
+  new_contacts_today: number
+  new_contacts_yesterday: number
+  won_deals_count: number
+  won_deals_value: number
+  sent_messages_today: number
+  sent_messages_yesterday: number
+}
 
-// --- 1. Metric cards ---------------------------------------------------
+export async function loadMetrics(db: DB, accountId: string): Promise<MetricsBundle> {
+  const now = new Date()
+  const todayStart = startOfLocalDay(now)
+  const yesterdayStart = new Date(todayStart)
+  yesterdayStart.setDate(yesterdayStart.getDate() - 1)
 
-export async function loadMetrics(db: DB): Promise<MetricsBundle> {
-  const todayStart = startOfLocalDay().toISOString()
-  const yesterdayStart = daysAgoStart(1).toISOString()
+  const { data, error } = await db.rpc('dashboard_metrics', {
+    p_account_id: accountId,
+    p_today_start: todayStart.toISOString(),
+    p_yesterday_start: yesterdayStart.toISOString(),
+  }).single().overrideTypes<MetricsRow, { merge: false }>()
 
-  const [
-    openConvCur,
-    newConvToday,
-    newConvYesterday,
-    newContactsToday,
-    newContactsYesterday,
-    closedDeals,
-    messagesToday,
-    messagesYesterday,
-  ] = await Promise.all([
-    db.from('conversations').select('id', { count: 'exact', head: true }).eq('status', 'open'),
-    db
-      .from('conversations')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'open')
-      .gte('created_at', todayStart),
-    db
-      .from('conversations')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'open')
-      .gte('created_at', yesterdayStart)
-      .lt('created_at', todayStart),
-    db.from('contacts').select('id', { count: 'exact', head: true }).gte('created_at', todayStart),
-    db
-      .from('contacts')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', yesterdayStart)
-      .lt('created_at', todayStart),
-    db.from('deals').select('value, status').eq('status', 'won'),
-    db
-      .from('messages')
-      .select('id', { count: 'exact', head: true })
-      .eq('sender_type', 'agent')
-      .gte('created_at', todayStart),
-    db
-      .from('messages')
-      .select('id', { count: 'exact', head: true })
-      .eq('sender_type', 'agent')
-      .gte('created_at', yesterdayStart)
-      .lt('created_at', todayStart),
-  ])
-
-  const closedDealsRows = (closedDeals.data ?? []) as { value: number | null }[]
-  const closedDealsValue = closedDealsRows.reduce((sum, d) => sum + (d.value ?? 0), 0)
+  if (error) throw error
+  if (!data) throw new Error('Dashboard metrics returned no row')
 
   return {
     activeConversations: {
-      current: openConvCur.count ?? 0,
-      // "vs yesterday" on a current-state count has no clean answer
-      // without snapshots — we show the delta in NEW open conversations
-      // today vs yesterday. That's the business-meaningful daily signal.
-      previous: (newConvToday.count ?? 0) - (newConvYesterday.count ?? 0),
+      current: data.open_conversations,
+      // Compare newly opened conversations, since there are no daily snapshots.
+      previous: data.new_open_conversations_today - data.new_open_conversations_yesterday,
     },
     newContactsToday: {
-      current: newContactsToday.count ?? 0,
-      previous: newContactsYesterday.count ?? 0,
+      current: data.new_contacts_today,
+      previous: data.new_contacts_yesterday,
     },
-    closedDealsValue,
-    closedDealsCount: closedDealsRows.length,
+    closedDealsValue: data.won_deals_value,
+    closedDealsCount: data.won_deals_count,
     messagesSentToday: {
-      current: messagesToday.count ?? 0,
-      previous: messagesYesterday.count ?? 0,
+      current: data.sent_messages_today,
+      previous: data.sent_messages_yesterday,
     },
   }
 }

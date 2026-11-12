@@ -1,4 +1,8 @@
 import { NextResponse, after } from 'next/server'
+import { acceptMetaIngress, IngressError, readDurableMetaBody } from '@/lib/whatsapp/durable/ingress'
+import { drainMetaIngress } from '@/lib/whatsapp/durable/worker'
+import { createMetaOutboxExecutor } from '@/lib/whatsapp/durable/dispatch'
+import { handleMetaStatusUpdate } from '@/lib/whatsapp/providers/meta-status'
 import { createClient } from '@supabase/supabase-js'
 import { decrypt, encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption'
 import { getMediaUrl, downloadMedia } from '@/lib/whatsapp/meta-api'
@@ -187,7 +191,11 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   // Read raw body first so we can HMAC-verify the exact bytes Meta
   // signed. request.json() would re-encode and break the signature.
-  const rawBody = await request.text()
+  const durableMode=process.env.WHATSAPP_DURABLE_INGRESS_ENABLED
+  let rawBody:string
+  try { rawBody=['true','paused'].includes(durableMode ?? '') ? await readDurableMetaBody(request) : await request.text() }
+  catch(error){return NextResponse.json({error:error instanceof IngressError?error.code:'webhook_read_failed'},
+    {status:error instanceof IngressError?error.status:400})}
   const signature = request.headers.get('x-hub-signature-256')
 
   if (!verifyMetaWebhookSignature(rawBody, signature)) {
@@ -197,12 +205,28 @@ export async function POST(request: Request) {
     console.warn('[webhook] rejected request with invalid signature')
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
+  if(durableMode==='paused')return NextResponse.json({error:'durable_ingress_paused'},{status:503})
 
   let body: { entry?: WhatsAppWebhookEntry[] }
   try {
     body = JSON.parse(rawBody)
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
+
+  if (process.env.WHATSAPP_DURABLE_INGRESS_ENABLED === 'true') {
+    try {
+      const db = supabaseAdmin()
+      const result = await acceptMetaIngress(db,body)
+      after(async () => {
+        try { await drainMetaIngress(db,createMetaOutboxExecutor(db)) }
+        catch { console.error('[whatsapp-ingress] worker requires recovery') }
+      })
+      return NextResponse.json({ status: 'durably_received', ...result }, { status: 200 })
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof IngressError ? error.code : 'durable_acceptance_failed' },
+        { status: error instanceof IngressError ? error.status : 503 })
+    }
   }
 
   // Process AFTER the response so we ack Meta within their ~20s timeout
@@ -250,17 +274,11 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
 
       const value = change.value
 
-      // Handle status updates
-      if (value.statuses) {
-        for (const status of value.statuses) {
-          await handleStatusUpdate(status)
-        }
-      }
-
-      // Handle incoming messages
-      if (!value.messages || !value.contacts) continue
-
-      const phoneNumberId = value.metadata.phone_number_id
+      // Resolve the receiving connection before handling any messaging event,
+      // including status-only webhooks. External message IDs are not global.
+      if (!value.statuses?.length && (!value.messages || !value.contacts)) continue
+      const phoneNumberId = value.metadata?.phone_number_id
+      if (!phoneNumberId) continue
 
       // Find user's config by phone_number_id. `.single()` returns
       // PGRST116 for both 0 rows AND ≥2 rows — distinguish them so
@@ -298,6 +316,16 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
       }
 
       const config = configRows[0]
+      if (config.waba_id && config.waba_id !== entry.id) continue
+
+      for (const status of value.statuses ?? []) {
+        await handleMetaStatusUpdate(supabaseAdmin(), {
+          accountId: config.account_id, connectionId: config.id, provider: 'meta_cloud',
+        }, status, (accountId, payload) => dispatchWebhookEvent(
+          supabaseAdmin(), accountId, 'message.status_updated', payload,
+        ))
+      }
+      if (!value.messages || !value.contacts) continue
 
       const decryptedAccessToken = decrypt(config.access_token)
 
@@ -318,136 +346,6 @@ async function processWebhook(body: { entry?: WhatsAppWebhookEntry[] }) {
           decryptedAccessToken
         )
       }
-    }
-  }
-}
-
-// The happy-path status ladder — pending → sent → delivered → read →
-// replied. Webhook replays must never regress a recipient back down
-// this ladder.
-//
-// `failed` is NOT on this ladder. It's a terminal side branch that is
-// only valid from the early states (pending / sent) — once Meta has
-// delivered or the user has read or replied, a later "failed" status
-// event is a bug in Meta's pipeline or a spoof attempt and must be
-// ignored.
-const RECIPIENT_STATUS_LADDER = [
-  'pending',
-  'sent',
-  'delivered',
-  'read',
-  'replied',
-] as const
-
-function ladderLevel(s: string): number {
-  const idx = (RECIPIENT_STATUS_LADDER as readonly string[]).indexOf(s)
-  return idx < 0 ? -1 : idx
-}
-
-/**
- * Can a recipient transition from `current` to `incoming`?
- *   - Along the ladder, only forward moves are allowed.
- *   - `failed` is accepted only from `pending` or `sent`; it's refused
- *     once the recipient has reached any of the success states.
- */
-function isValidStatusTransition(current: string, incoming: string): boolean {
-  if (incoming === 'failed') {
-    return current === 'pending' || current === 'sent'
-  }
-  if (current === 'failed') {
-    return false // failed is terminal
-  }
-  const ci = ladderLevel(current)
-  const ii = ladderLevel(incoming)
-  if (ii < 0) return false // unknown incoming status
-  if (ci < 0) return true // unknown current — accept anything on the ladder
-  return ii > ci
-}
-
-async function handleStatusUpdate(status: {
-  id: string
-  status: string
-  timestamp: string
-  recipient_id: string
-}) {
-  // 1) Mirror onto messages (legacy behavior) — Meta's status values
-  //    already match the CHECK constraint on messages.status. No
-  //    `.select()`: message_id is NOT unique (migration 009 — Meta ids
-  //    repeat across numbers), so this updates 0..N rows and must not
-  //    assume a single row.
-  const { error: msgErr } = await supabaseAdmin()
-    .from('messages')
-    .update({ status: status.status })
-    .eq('message_id', status.id)
-
-  if (msgErr) {
-    console.error('Error updating message status:', msgErr)
-  }
-
-  // Webhook fan-out for this status change happens at the END of this
-  // handler (after the broadcast mirror below), so a slow subscriber
-  // endpoint can't delay the broadcast_recipients update.
-
-  // 2) Mirror onto broadcast_recipients via whatsapp_message_id
-  //    (added in migration 003). The aggregate trigger on
-  //    broadcast_recipients re-derives the parent broadcast's
-  //    sent/delivered/read/failed counts automatically.
-  const tsIso = new Date(parseInt(status.timestamp) * 1000).toISOString()
-
-  const { data: recipient, error: recFetchErr } = await supabaseAdmin()
-    .from('broadcast_recipients')
-    .select('id, status')
-    .eq('whatsapp_message_id', status.id)
-    .maybeSingle()
-
-  if (recFetchErr) {
-    console.error('Error fetching broadcast recipient:', recFetchErr)
-  } else if (
-    recipient &&
-    // Guard transitions — forward-only on the success ladder, and
-    // `failed` only from pre-delivered states.
-    isValidStatusTransition(recipient.status, status.status)
-  ) {
-    const update: Record<string, unknown> = { status: status.status }
-    if (status.status === 'sent' && !('sent_at' in update)) update.sent_at = tsIso
-    if (status.status === 'delivered') update.delivered_at = tsIso
-    if (status.status === 'read') update.read_at = tsIso
-
-    const { error: recUpdateErr } = await supabaseAdmin()
-      .from('broadcast_recipients')
-      .update(update)
-      .eq('id', recipient.id)
-
-    if (recUpdateErr) {
-      console.error('Error updating broadcast recipient status:', recUpdateErr)
-    }
-  }
-
-  // 3) Webhook fan-out for messages we store (inbox / API sends).
-  //    Runs last so a slow subscriber can't delay the mirrors above.
-  //    Bounded to one row (message_id isn't unique) purely to resolve
-  //    the owning account for delivery.
-  const { data: msgRow } = await supabaseAdmin()
-    .from('messages')
-    .select('conversation_id, conversations(account_id)')
-    .eq('message_id', status.id)
-    .limit(1)
-    .maybeSingle()
-
-  if (msgRow) {
-    const conv = msgRow.conversations as { account_id: string } | null
-    const accountId = conv?.account_id
-    if (accountId) {
-      await dispatchWebhookEvent(
-        supabaseAdmin(),
-        accountId,
-        'message.status_updated',
-        {
-          whatsapp_message_id: status.id,
-          conversation_id: msgRow.conversation_id,
-          status: status.status,
-        }
-      )
     }
   }
 }

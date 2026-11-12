@@ -1,6 +1,8 @@
+import { sendOutbound, canTryRecipientVariant } from '@/lib/whatsapp/providers/send-outbound';
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { sendTemplateMessage } from '@/lib/whatsapp/meta-api'
+import { resolveLegacyMetaProvider } from '@/lib/whatsapp/providers/legacy-meta-connection';
+import { toTemplateMessage } from '@/lib/whatsapp/providers/legacy-template';
 import { decrypt } from '@/lib/whatsapp/encryption'
 import type { SendTimeParams } from '@/lib/whatsapp/template-send-builder'
 import { isMessageTemplate } from '@/lib/whatsapp/template-row-guard'
@@ -8,7 +10,7 @@ import {
   sanitizePhoneForMeta,
   isValidE164,
   phoneVariants,
-  isRecipientNotAllowedError,
+
 } from '@/lib/whatsapp/phone-utils'
 import {
   checkRateLimit,
@@ -152,6 +154,8 @@ export async function POST(request: Request) {
 
     const accessToken = decrypt(config.access_token)
 
+    const provider = resolveLegacyMetaProvider(accountId, config, accessToken);
+
     // Load the template row once so sendTemplateMessage can build
     // header + button components on each iteration. Loading inside
     // the loop would N+1 against Supabase for every recipient.
@@ -200,23 +204,21 @@ export async function POST(request: Request) {
 
       for (const variant of variants) {
         try {
-          const result = await sendTemplateMessage({
-            phoneNumberId: config.phone_number_id,
-            accessToken,
+          const result = await sendOutbound(accountId, provider, toTemplateMessage(provider.connection, {
             to: variant,
             templateName: template_name,
             language: template_language || 'en_US',
             template: templateRow ?? undefined,
             messageParams: recipient.messageParams,
             params: recipient.params ?? [],
-          })
-          sentMessageId = result.messageId
+          }))
+          sentMessageId = result.value
           lastError = null
           break
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : 'Unknown error'
-          if (!isRecipientNotAllowedError(errorMessage)) {
+          if (!canTryRecipientVariant(error)) {
             lastError = errorMessage
             break
           }

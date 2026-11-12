@@ -2,14 +2,16 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where([data-mode="dark"], [data-mode="dark"] *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
+  --color-ambient-foreground: var(--ambient-foreground);
+  --font-sans: var(--crm-sans);
+  --font-mono: ui-monospace, monospace;
+  --font-serif: Georgia, "Times New Roman", serif;
+  --font-heading: var(--crm-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -57,97 +59,130 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* ============================================================
- * THEMING — two orthogonal dimensions
- *
- *   1. MODE   (light / dark)  → neutral surfaces. Selected with
- *      `document.documentElement.dataset.mode`. Defaults to dark.
- *   2. ACCENT (violet / …)    → the primary color only. Selected
- *      with `document.documentElement.dataset.theme`.
- *
- * The two compose: any accent works in either mode. Neutral
- * tokens (background / card / border / muted / sidebar surfaces /
- * neutral charts / radius) live in the MODE blocks below; accent
- * tokens (--primary*, --ring, --chart-1, --sidebar-primary*,
- * --sidebar-ring) live in the ACCENT blocks. They set disjoint
- * variables, so cascade order between them doesn't matter.
- *
- * `:root` carries the dark-mode + violet defaults so a visitor
- * renders correctly before JS runs; the boot script in
- * layout.tsx replays the saved mode + accent before first paint.
- *
- * The three `--primary-*` extras (hover / soft / soft-2) feed
- * hovered primary buttons and tinted-primary surfaces (sidebar
- * active pill, validation badges).
- *
- * Token shapes come straight from the design handoff at
- * project/Color Themes.html — change one, change the other.
- * ============================================================ */
+:root {
+  color-scheme: light;
+  --crm-sans: Arial, Helvetica, sans-serif;
+  --ambient-foreground: #f8f8f3;
+  --background: #eeeee7;
+  --foreground: #263c32;
+  --card: #f8f8f3;
+  --card-2: #e7eadf;
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
 
-/* ---- MODE: neutral surfaces ---- */
+  --secondary: #e3e8da;
+  --secondary-foreground: var(--foreground);
+  --muted: #e5e8de;
+  --muted-foreground: #536157;
+  --accent: #d5ee9a;
+  --accent-foreground: var(--foreground);
+  --border: #c9cec3;
+  --input: #849184;
+  --destructive: #a52624;
 
-:root,
-html[data-mode="dark"] {
-  --background: oklch(0.13 0.01 260);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.18 0.01 260);
-  --card-2: oklch(0.205 0.01 260);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.18 0.01 260);
-  --popover-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.22 0.01 260);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.22 0.01 260);
-  --muted-foreground: oklch(0.65 0.01 260);
-  --accent: oklch(0.22 0.01 260);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.28 0.01 260);
-  --input: oklch(0.28 0.01 260);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --primary: var(--foreground);
+  --primary-foreground: #fff;
+  --primary-hover: #365347;
+  --primary-soft: #e3e8da;
+  --primary-soft-2: #dce5cc;
+  --ring: #556f24;
+
+  --chart-1: #345548;
+  --chart-2: #527126;
+  --chart-3: #926022;
+  --chart-4: #366888;
+  --chart-5: #86516c;
+
   --radius: 0.625rem;
-  --sidebar: oklch(0.16 0.01 260);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.22 0.01 260);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.28 0.01 260);
+  --sidebar: #e3e8da;
+  --sidebar-foreground: var(--foreground);
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-ring: var(--ring);
 }
 
-html[data-mode="light"] {
-  --background: oklch(0.99 0.002 260);
-  --foreground: oklch(0.21 0.01 260);
-  --card: oklch(1 0 0);
-  --card-2: oklch(0.985 0.002 260);
-  --card-foreground: oklch(0.21 0.01 260);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.21 0.01 260);
-  --secondary: oklch(0.967 0.003 260);
-  --secondary-foreground: oklch(0.25 0.01 260);
-  --muted: oklch(0.967 0.003 260);
-  --muted-foreground: oklch(0.52 0.015 260);
-  --accent: oklch(0.96 0.004 260);
-  --accent-foreground: oklch(0.25 0.01 260);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0.004 260);
-  --input: oklch(0.922 0.004 260);
-  --chart-2: oklch(0.6 0.1 260);
-  --chart-3: oklch(0.7 0.06 260);
-  --chart-4: oklch(0.8 0.04 260);
-  --chart-5: oklch(0.87 0.03 260);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0.002 260);
-  --sidebar-foreground: oklch(0.21 0.01 260);
-  --sidebar-accent: oklch(0.96 0.004 260);
-  --sidebar-accent-foreground: oklch(0.25 0.01 260);
-  --sidebar-border: oklch(0.922 0.004 260);
+:root[data-mode="dark"] {
+  color-scheme: dark;
+  --background: #14251d;
+  --foreground: #eef1e5;
+  --card: #1c3026;
+  --card-2: #263d30;
+  --secondary: #2b4235;
+  --muted: #2a4134;
+  --muted-foreground: #bcc9bd;
+  --accent: #344b2f;
+  --accent-foreground: #e4f3c4;
+  --border: #455a4b;
+  --input: #7c9282;
+  --destructive: #ffa3a0;
+
+  --primary: #d5ee9a;
+  --primary-foreground: #263c32;
+  --primary-hover: #e3f4ba;
+  --primary-soft: #2d4431;
+  --primary-soft-2: #395036;
+  --ring: #b6d181;
+
+  --chart-1: #a1cdb0;
+  --chart-2: #c7da8c;
+  --chart-3: #f0c487;
+  --chart-4: #9fcae4;
+  --chart-5: #e2a9c5;
+  --sidebar: #192c22;
+  --sidebar-accent-foreground: var(--accent-foreground);
 }
 
-/* ---- ACCENT: primary color ---- */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+@layer components {
+  .crm-title {
+    font-weight: 500;
+    letter-spacing: -0.04em;
+  }
 
-:root,
+  .crm-mark {
+    display: inline-grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 2.25rem;
+    aspect-ratio: 1;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font: italic 600 1.75rem/1 Georgia, serif;
+  }
+
+  .crm-ambient {
+    background: radial-gradient(ellipse at 65% 45%, #4d6630, #13241b 75%);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .crm-enter {
+      animation: crm-enter 260ms cubic-bezier(0.2, 0.75, 0.3, 1) both;
+    }
+  }
+}
+
+@keyframes crm-enter {
+  from {
+    opacity: 0.55;
+    transform: translateY(5px);
+  }
+}
+
+/* Optional accent colors from Appearance. The brand palette is the default. */
 html[data-theme="violet"] {
   --primary: oklch(0.526 0.247 293);
   --primary-foreground: oklch(0.985 0 0);
@@ -215,16 +250,4 @@ html[data-theme="rose"] {
   --sidebar-primary: oklch(0.645 0.22 16);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-ring: oklch(0.645 0.22 16);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-  html {
-    @apply font-sans;
-  }
 }

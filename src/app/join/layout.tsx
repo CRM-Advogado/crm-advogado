@@ -1,5 +1,5 @@
 // ============================================================
-// /join/[token] layout — minimal full-bleed dark shell.
+// /join/[token] layout — branded entrance shell.
 //
 // The route group sits outside both `(auth)` and `(dashboard)`
 // because it's hybrid: the page must render for anonymous
@@ -9,10 +9,6 @@
 // page redirect; reusing `(dashboard)` would funnel anonymous
 // visitors through its login redirect. A dedicated layout
 // avoids both.
-//
-// Styling matches the login / signup pages — centered card on a
-// slate-950 background — so the join experience feels like a
-// natural step in the auth funnel rather than a foreign page.
 //
 // Referrer-Policy: no-referrer
 //   The plaintext invite token lives in the URL path. Without
@@ -27,6 +23,8 @@
 
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { BrandAmbient } from '@/components/layout/brand-ambient';
+import { ThemeToggle } from '@/components/layout/theme-toggle';
 
 export const metadata: Metadata = {
   referrer: 'no-referrer',
@@ -37,8 +35,12 @@ export const metadata: Metadata = {
 
 export default function JoinLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      {children}
+    <div className="crm-ambient relative isolate flex min-h-svh flex-col">
+      <BrandAmbient />
+      <div className="relative z-20 flex justify-end px-4 pt-4 sm:px-6">
+        <ThemeToggle />
+      </div>
+      <div className="crm-enter relative z-10 grid flex-1 place-items-center px-4 py-8">{children}</div>
     </div>
   );
 }

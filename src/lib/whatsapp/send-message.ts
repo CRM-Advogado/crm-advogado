@@ -1,3 +1,4 @@
+import { sendOutbound, canTryRecipientVariant } from '@/lib/whatsapp/providers/send-outbound';
 // ============================================================
 // Outbound message send — the core that both the dashboard's
 // `/api/whatsapp/send` route and the public `/api/v1/messages`
@@ -21,14 +22,9 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import {
-  sendTextMessage,
-  sendTemplateMessage,
-  sendMediaMessage,
-  sendInteractiveButtons,
-  sendInteractiveList,
-  type MediaKind,
-} from '@/lib/whatsapp/meta-api';
+import { resolveLegacyMetaProvider } from '@/lib/whatsapp/providers/legacy-meta-connection';
+import { externalId, type MediaKind } from '@/lib/whatsapp/providers/domain';
+import { toTemplateMessage } from '@/lib/whatsapp/providers/legacy-template';
 import {
   validateInteractivePayload,
   interactivePayloadPreviewText,
@@ -40,7 +36,7 @@ import {
   sanitizePhoneForMeta,
   isValidE164,
   phoneVariants,
-  isRecipientNotAllowedError,
+
 } from '@/lib/whatsapp/phone-utils';
 import type { MessageTemplate } from '@/types';
 import { isMessageTemplate } from '@/lib/whatsapp/template-row-guard';
@@ -264,6 +260,8 @@ export async function sendMessageToConversation(
 
   const accessToken = decrypt(config.access_token);
 
+  const provider = resolveLegacyMetaProvider(accountId, config, accessToken);
+
   // Self-heal legacy CBC ciphertexts. Fire-and-forget; idempotent.
   if (isLegacyFormat(config.access_token)) {
     void db
@@ -331,9 +329,7 @@ export async function sendMessageToConversation(
 
   const attempt = async (phone: string): Promise<string> => {
     if (messageType === 'template') {
-      const result = await sendTemplateMessage({
-        phoneNumberId: config.phone_number_id,
-        accessToken,
+      const result = await sendOutbound(accountId, provider, toTemplateMessage(provider.connection, {
         to: phone,
         templateName: templateName!,
         language: templateLanguage || 'en_US',
@@ -341,58 +337,50 @@ export async function sendMessageToConversation(
         messageParams: templateMessageParams ?? undefined,
         params: templateParams || [],
         contextMessageId,
-      });
-      return result.messageId;
+      }));
+      return result.value;
     }
     if (isMediaKind) {
-      const result = await sendMediaMessage({
-        phoneNumberId: config.phone_number_id,
-        accessToken,
+      const result = await sendOutbound(accountId, provider, { kind: 'media',
         to: phone,
-        kind: messageType as MediaKind,
-        link: mediaUrl!,
+        mediaKind: messageType as MediaKind,
+        url: mediaUrl!,
         caption: contentText || undefined,
         filename: filename || undefined,
-        contextMessageId,
+        replyTo: contextMessageId ? externalId(provider.connection, contextMessageId) : undefined,
       });
-      return result.messageId;
+      return result.value;
     }
     if (messageType === 'interactive') {
       const p = interactivePayload!;
       if (p.kind === 'buttons') {
-        const result = await sendInteractiveButtons({
-          phoneNumberId: config.phone_number_id,
-          accessToken,
+        const result = await sendOutbound(accountId, provider, { kind: 'buttons',
           to: phone,
-          bodyText: p.body,
-          headerText: p.header || undefined,
-          footerText: p.footer || undefined,
+          body: p.body,
+          header: p.header || undefined,
+          footer: p.footer || undefined,
           buttons: p.buttons,
-          contextMessageId,
+          replyTo: contextMessageId ? externalId(provider.connection, contextMessageId) : undefined,
         });
-        return result.messageId;
+        return result.value;
       }
-      const result = await sendInteractiveList({
-        phoneNumberId: config.phone_number_id,
-        accessToken,
+      const result = await sendOutbound(accountId, provider, { kind: 'list',
         to: phone,
-        bodyText: p.body,
+        body: p.body,
         buttonLabel: p.button_label,
-        headerText: p.header || undefined,
-        footerText: p.footer || undefined,
+        header: p.header || undefined,
+        footer: p.footer || undefined,
         sections: p.sections,
-        contextMessageId,
+        replyTo: contextMessageId ? externalId(provider.connection, contextMessageId) : undefined,
       });
-      return result.messageId;
+      return result.value;
     }
-    const result = await sendTextMessage({
-      phoneNumberId: config.phone_number_id,
-      accessToken,
+    const result = await sendOutbound(accountId, provider, { kind: 'text',
       to: phone,
       text: contentText!,
-      contextMessageId,
+      replyTo: contextMessageId ? externalId(provider.connection, contextMessageId) : undefined,
     });
-    return result.messageId;
+    return result.value;
   };
 
   // Send via Meta — retry across phone-number variants if Meta rejects
@@ -411,8 +399,8 @@ export async function sendMessageToConversation(
         lastError = null;
         break;
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        if (!isRecipientNotAllowedError(message)) {
+
+        if (!canTryRecipientVariant(err)) {
           throw err;
         }
         lastError = err;
