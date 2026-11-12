@@ -4,6 +4,8 @@ O app Next.js roda como Worker pelo OpenNext. As APIs, o proxy de autenticação
 
 Use Node.js 22 para as ferramentas do Cloudflare. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `NEXT_PUBLIC_SITE_URL` e `NEXT_PUBLIC_APP_LOCALE=pt` no ambiente de build. A chave publicável é a única chave do Supabase usada nessa etapa.
 
+`NEXT_PUBLIC_SITE_URL` deve apontar para a origem pública canônica do CRM. O Proxy usa essa origem para validar as requisições que modificam dados na API do painel. Clientes com sessão por cookie precisam enviar `Origin` ou `Referer` da origem canônica. Requisições com corpo devem usar `Content-Type: application/json`. A API pública `/api/v1`, os webhooks e os crons usam sua própria autenticação.
+
 ```sh
 npm ci
 npm run build:cloudflare
