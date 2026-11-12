@@ -1,7 +1,60 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
+const INDEPENDENT_API_ROUTES = new Set([
+  '/api/automations/cron',
+  '/api/flows/cron',
+  '/api/whatsapp/ingress/cron',
+  '/api/whatsapp/webhook',
+  '/api/whatsapp/ycloud/webhook',
+])
+
+function httpOrigin(value: string): string | null {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:' || url.protocol === 'http:' ? url.origin : null
+  } catch {
+    return null
+  }
+}
+
+function protectDashboardMutation(request: NextRequest): NextResponse | undefined {
+  const path = request.nextUrl.pathname.replace(/\/$/, '')
+  if (SAFE_METHODS.has(request.method) || !path.startsWith('/api/')) return
+  if (
+    path.startsWith('/api/v1/') ||
+    INDEPENDENT_API_ROUTES.has(path) ||
+    /^\/api\/webhooks\/zapsign\/[^/]+$/.test(path)
+  ) return
+
+  // Use the configured public origin behind a reverse proxy. Without an
+  // override use the request URL, never client-supplied forwarded headers.
+  const target = httpOrigin(process.env.NEXT_PUBLIC_SITE_URL?.trim() || request.url)
+  const origin = request.headers.get('origin')
+  const referer = request.headers.get('referer')
+  const source = origin ?? (referer ? httpOrigin(referer) : null)
+  const site = request.headers.get('sec-fetch-site')
+
+  if (!target || source !== target || (site !== null && site !== 'same-origin')) {
+    return NextResponse.json({ error: 'Forbidden request origin' }, { status: 403 })
+  }
+
+  const contentType = request.headers.get('content-type')
+  const mediaType = contentType?.split(';', 1)[0].trim().toLowerCase()
+  const hasDeclaredBody = Number(request.headers.get('content-length')) > 0 ||
+    request.headers.has('transfer-encoding')
+
+  // Existing bodyless actions send neither Content-Type nor a payload.
+  if (mediaType !== 'application/json' && (contentType !== null || hasDeclaredBody)) {
+    return NextResponse.json({ error: 'Expected application/json' }, { status: 415 })
+  }
+}
+
 export async function proxy(request: NextRequest) {
+  const denied = protectDashboardMutation(request)
+  if (denied) return denied
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -90,6 +143,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/api/:path*',
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

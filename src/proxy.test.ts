@@ -45,7 +45,10 @@ beforeEach(() => {
   refreshedCookies = [];
 });
 
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+  vi.unstubAllEnvs();
+});
 
 const ROTATED = {
   name: "sb-test-auth-token",
@@ -109,5 +112,101 @@ describe("proxy — refreshed auth cookies survive redirects", () => {
     // No redirect — the normal NextResponse.next() already carries cookies.
     expect(res.headers.get("location")).toBeNull();
     expect(res.cookies.get(ROTATED.name)?.value).toBe(ROTATED.value);
+  });
+});
+
+
+describe("proxy — dashboard API mutation protection", () => {
+  function mutation(headers: HeadersInit = {}, method = "POST", path = "/api/account/invitations") {
+    return new NextRequest("https://crm.example.test" + path, { method, headers });
+  }
+
+  beforeEach(() => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "");
+    mockUser = { id: "user-1" };
+    refreshedCookies = [ROTATED];
+  });
+
+  it.each([
+    ["https://attacker.test", "cross-site"],
+    ["https://sibling.example.test", "same-site"],
+    ["https://crm.example.test", "cross-site"],
+    ["null", "same-origin"],
+  ])("blocks origin %s with Fetch Metadata %s before session refresh", async (origin, site) => {
+    const result = await proxy(mutation({
+      origin,
+      "sec-fetch-site": site,
+      referer: "https://crm.example.test/dashboard",
+      "content-type": "application/json",
+      cookie: "sb-test-auth-token=session",
+    }));
+    expect(result.status).toBe(403);
+    expect(result.cookies.get(ROTATED.name)).toBeUndefined();
+  });
+
+  it("rejects missing origin evidence and ignores untrusted forwarded headers", async () => {
+    expect((await proxy(mutation({ "sec-fetch-site": "same-origin" }))).status).toBe(403);
+    expect((await proxy(mutation({
+      origin: "https://attacker.test",
+      "x-forwarded-host": "attacker.test",
+      "x-forwarded-proto": "https",
+    }))).status).toBe(403);
+  });
+
+  it("accepts the canonical public origin even behind a reverse proxy", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://crm.example.test/");
+    const result = await proxy(new NextRequest("http://localhost:3000/api/account/invitations", {
+      method: "POST",
+      headers: {
+        origin: "https://crm.example.test",
+        "content-type": "application/json; charset=utf-8",
+      },
+    }));
+    expect(result.cookies.get(ROTATED.name)?.value).toBe(ROTATED.value);
+  });
+
+  it("accepts a same-origin Referer when Origin is absent, including bodyless actions", async () => {
+    const result = await proxy(mutation({
+      referer: "https://crm.example.test/settings",
+      "sec-fetch-site": "same-origin",
+      "content-length": "0",
+    }, "DELETE"));
+    expect(result.cookies.get(ROTATED.name)?.value).toBe(ROTATED.value);
+  });
+
+  it.each([
+    ["content-type", "text/plain;charset=UTF-8"],
+    ["content-type", "multipart/form-data; boundary=boundary"],
+    ["content-length", "5"],
+  ])("rejects unsupported %s: %s", async (header, value) => {
+    const result = await proxy(mutation({
+      origin: "https://crm.example.test",
+      [header]: value,
+    }));
+    expect(result.status).toBe(415);
+    expect(result.cookies.get(ROTATED.name)).toBeUndefined();
+  });
+
+  it.each([
+    "/api/v1/messages",
+    "/api/automations/cron",
+    "/api/flows/cron",
+    "/api/whatsapp/ingress/cron",
+    "/api/whatsapp/webhook",
+    "/api/whatsapp/ycloud/webhook",
+    "/api/webhooks/zapsign/secret",
+  ])("leaves independent authentication to %s", async (path) => {
+    const result = await proxy(mutation({ "content-type": "text/plain" }, "POST", path));
+    expect(result.cookies.get(ROTATED.name)?.value).toBe(ROTATED.value);
+  });
+
+  it("does not treat unrelated cookie routes as independently authenticated", async () => {
+    const result = await proxy(mutation({}, "POST", "/api/whatsapp/config/webhook"));
+    expect(result.status).toBe(403);
+  });
+
+  it("allows reads without Origin or Referer", async () => {
+    const result = await proxy(mutation({}, "GET"));
+    expect(result.cookies.get(ROTATED.name)?.value).toBe(ROTATED.value);
   });
 });
