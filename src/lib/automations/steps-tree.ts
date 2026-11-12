@@ -4,23 +4,18 @@ import { supabaseAdmin } from './admin-client'
 // Builder payload → flat rows for automation_steps.
 // Root steps arrive in order. A Condition step carries its children
 // under `branches: { yes: [...], no: [...] }`. We walk the tree and
-// assign stable UUIDs so parent_step_id references resolve in a
+// generate UUIDs so parent_step_id references resolve in a
 // single INSERT.
 // ------------------------------------------------------------
 
 export interface BuilderStepInput {
-  id?: string
   step_type: string
   step_config: Record<string, unknown>
   branches?: { yes?: BuilderStepInput[]; no?: BuilderStepInput[] }
-  // Legacy flat form (from template seeds):
-  branch?: 'yes' | 'no' | null
-  parent_index?: number | null
 }
 
-interface InsertRow {
+interface StepRow {
   id: string
-  automation_id: string
   parent_step_id: string | null
   branch: 'yes' | 'no' | null
   step_type: string
@@ -28,83 +23,30 @@ interface InsertRow {
   position: number
 }
 
-const uid = () =>
-  typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? crypto.randomUUID()
-    : Math.random().toString(36).slice(2) + Date.now().toString(36)
-
-export async function replaceSteps(
-  automationId: string,
-  input: BuilderStepInput[],
-): Promise<string | null> {
-  const admin = supabaseAdmin()
-  const { error: delErr } = await admin
-    .from('automation_steps')
-    .delete()
-    .eq('automation_id', automationId)
-  if (delErr) return delErr.message
-  return insertSteps(automationId, input)
-}
-
-export async function insertSteps(
-  automationId: string,
-  input: BuilderStepInput[],
-): Promise<string | null> {
-  if (!input || input.length === 0) return null
-
-  const looksFlat = input.some(
-    (s) => s.branch !== undefined || s.parent_index !== undefined,
-  )
-  const tree = looksFlat ? seedsToTree(input) : input
-
-  const rows: InsertRow[] = []
+/** Generate IDs here so API callers cannot choose step primary keys. */
+export function flattenSteps(input: BuilderStepInput[]): StepRow[] {
+  const rows: StepRow[] = []
   function walk(
     steps: BuilderStepInput[],
     parentId: string | null,
-    branch: 'yes' | 'no' | null,
+    branch: 'yes' | 'no' | null
   ) {
-    steps.forEach((s, idx) => {
-      const id = s.id ?? uid()
+    steps.forEach((step, position) => {
+      const id = crypto.randomUUID()
       rows.push({
         id,
-        automation_id: automationId,
         parent_step_id: parentId,
         branch,
-        step_type: s.step_type,
-        step_config: s.step_config ?? {},
-        position: idx,
+        step_type: step.step_type,
+        step_config: step.step_config,
+        position,
       })
-      if (s.step_type === 'condition' && s.branches) {
-        if (s.branches.yes) walk(s.branches.yes, id, 'yes')
-        if (s.branches.no) walk(s.branches.no, id, 'no')
-      }
+      if (step.branches?.yes) walk(step.branches.yes, id, 'yes')
+      if (step.branches?.no) walk(step.branches.no, id, 'no')
     })
   }
-  walk(tree, null, null)
-
-  if (rows.length === 0) return null
-  const { error } = await supabaseAdmin().from('automation_steps').insert(rows)
-  return error?.message ?? null
-}
-
-function seedsToTree(seeds: BuilderStepInput[]): BuilderStepInput[] {
-  const nodes: BuilderStepInput[] = seeds.map((s) => ({
-    ...s,
-    branches: { yes: [], no: [] },
-  }))
-  const roots: BuilderStepInput[] = []
-  nodes.forEach((n, i) => {
-    const seed = seeds[i]
-    if (seed.parent_index == null) {
-      roots.push(n)
-    } else {
-      const parent = nodes[seed.parent_index]
-      parent.branches = parent.branches ?? { yes: [], no: [] }
-      const bucket = (seed.branch ?? 'yes') as 'yes' | 'no'
-      ;(parent.branches[bucket] ??= []).push(n)
-    }
-  })
-  return roots
+  walk(input, null, null)
+  return rows
 }
 
 /**

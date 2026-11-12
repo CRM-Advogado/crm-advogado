@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server'
 import { requireRole, toErrorResponse } from '@/lib/auth/account'
 import { supabaseAdmin } from '@/lib/automations/admin-client'
-import { insertSteps } from '@/lib/automations/steps-tree'
+import { flattenSteps } from '@/lib/automations/steps-tree'
+import { readAutomationJson } from '@/lib/automations/input'
 import { loadReferenceCatalog } from '@/lib/automations/reference-catalog'
 import {
-  IMPORT_LIMITS,
   checkWebhookUrls,
   parseImportDocument,
-  type ImportIssue,
 } from '@/lib/automations/import'
 import { isDeliverableUrl } from '@/lib/webhooks/ssrf'
 
@@ -43,32 +42,16 @@ export async function POST(request: Request) {
 
   const dryRun = new URL(request.url).searchParams.get('dry_run') === 'true'
 
-  // Corpo lido como texto para medir ANTES do parse: `JSON.parse` de
-  // um arquivo de centenas de MB trava o processo antes de qualquer
-  // validação ter chance de recusá-lo.
-  const raw = await request.text()
-  if (raw.length > IMPORT_LIMITS.maxBytes) {
+  const body = await readAutomationJson(request)
+  if (!body.ok) {
     return NextResponse.json(
       {
-        error: `File is larger than ${Math.floor(IMPORT_LIMITS.maxBytes / 1024)} KB`,
-        issues: [] as ImportIssue[],
-      },
-      { status: 413 },
-    )
-  }
-
-  let doc: unknown
-  try {
-    doc = JSON.parse(raw)
-  } catch {
-    return NextResponse.json(
-      {
-        error: 'File is not valid JSON',
-        issues: [
-          { path: '', message: 'could not parse the file', code: 'invalid_document' },
+        error: body.message,
+        issues: body.status === 413 ? [] : [
+          { path: '', message: body.message, code: 'invalid_document' },
         ],
       },
-      { status: 400 },
+      { status: body.status },
     )
   }
 
@@ -80,7 +63,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Could not load account references' }, { status: 500 })
   }
 
-  const { automations, issues } = parseImportDocument(doc, catalog)
+  const { automations, issues } = parseImportDocument(body.value, catalog)
 
   // SSRF: uma URL interna gravada passa despercebida para sempre — o
   // motor recusa entregar, mas em silêncio e só na primeira execução.
@@ -114,55 +97,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ dry_run: true, automations: preview })
   }
 
-  // ---- Gravação -------------------------------------------------
-  // Uma única instrução para as automações (atômica no Postgres) e
-  // depois os passos. Se os passos falharem, as automações recém
-  // criadas são apagadas — `automation_steps.automation_id` é
-  // ON DELETE CASCADE (migration 006), então isso não deixa resto.
-  const admin = supabaseAdmin()
+  const { data: created, error } = await supabaseAdmin().rpc('create_automation_trees', {
+    p_account_id: ctx.accountId,
+    p_user_id: ctx.userId,
+    p_automations: automations.map((automation) => ({
+      ...automation,
+      steps: flattenSteps(automation.steps),
+    })),
+  })
 
-  const { data: created, error: insertErr } = await admin
-    .from('automations')
-    .insert(
-      automations.map((a) => ({
-        user_id: ctx.userId,
-        account_id: ctx.accountId,
-        name: a.name,
-        description: a.description,
-        trigger_type: a.trigger_type,
-        trigger_config: a.trigger_config,
-        is_active: a.is_active,
-      })),
-    )
-    .select()
-
-  if (insertErr || !created || created.length !== automations.length) {
-    console.error('[POST /api/automations/import] insert failed:', insertErr)
+  if (error || !created || created.length !== automations.length) {
+    console.error('[POST /api/automations/import] insert failed:', error)
     return NextResponse.json({ error: 'Could not create the automations' }, { status: 500 })
-  }
-
-  // A ordem do `.select()` acompanha a do `.insert()`, então índice a
-  // índice cada linha criada corresponde à automação do documento.
-  for (let i = 0; i < created.length; i++) {
-    const stepErr = await insertSteps(created[i].id as string, automations[i].steps)
-    if (!stepErr) continue
-
-    console.error('[POST /api/automations/import] steps failed, rolling back:', stepErr)
-    const ids = created.map((c) => c.id as string)
-    const { error: cleanupErr } = await admin.from('automations').delete().in('id', ids)
-    if (cleanupErr) {
-      // Não é recuperável automaticamente; registrar os ids é o que
-      // permite limpar à mão depois.
-      console.error(
-        '[POST /api/automations/import] rollback failed, orphaned automations:',
-        ids,
-        cleanupErr,
-      )
-    }
-    return NextResponse.json(
-      { error: 'Could not create the automation steps' },
-      { status: 500 },
-    )
   }
 
   return NextResponse.json({ imported: created.length, automations: preview }, { status: 201 })

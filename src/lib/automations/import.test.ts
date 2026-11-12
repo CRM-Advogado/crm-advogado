@@ -437,8 +437,6 @@ describe("parseImportDocument — referências", () => {
 
 describe("parseImportDocument — segurança", () => {
   it("drops a caller-supplied step id", () => {
-    // `insertSteps` usa `s.id ?? uid()`, então aceitar o campo
-    // deixaria o arquivo escolher a chave primária da linha.
     const { automations } = parseImportDocument(
       doc([
         {
@@ -449,7 +447,7 @@ describe("parseImportDocument — segurança", () => {
       ]),
       catalog,
     );
-    expect(automations[0].steps[0].id).toBeUndefined();
+    expect(automations[0].steps[0]).not.toHaveProperty("id");
   });
 
   it("defaults is_active to false but honours an explicit true", () => {

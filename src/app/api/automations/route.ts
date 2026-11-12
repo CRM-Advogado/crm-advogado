@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { requireRole, toErrorResponse } from '@/lib/auth/account'
 import { supabaseAdmin } from '@/lib/automations/admin-client'
 import { getTemplate } from '@/lib/automations/templates'
-import { insertSteps, type BuilderStepInput } from '@/lib/automations/steps-tree'
+import { flattenSteps } from '@/lib/automations/steps-tree'
+import { isObject, parseAutomationFields, parseSteps, readAutomationJson } from '@/lib/automations/input'
 import {
   validateStepsForActivation,
   validateTriggerForActivation,
@@ -25,56 +26,46 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  // Creating an automation is a write — the RLS automations_insert policy
-  // requires `agent`, but this route inserts via the service-role client
-  // which bypasses RLS, so the role must be enforced here.
+  let ctx
   try {
-    await requireRole('agent')
+    ctx = await requireRole('agent')
   } catch (err) {
     return toErrorResponse(err)
   }
 
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  // Resolve the caller's account_id — `automations.account_id` is NOT
-  // NULL post-017, so an INSERT without it trips the not-null constraint
-  // even though the admin client bypasses RLS.
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('account_id')
-    .eq('user_id', user.id)
-    .single()
-  const accountId = profile?.account_id as string | undefined
-  if (!accountId) {
-    return NextResponse.json(
-      { error: 'Your profile is not linked to an account.' },
-      { status: 403 },
-    )
+  const body = await readAutomationJson(request)
+  if (!body.ok) return NextResponse.json({ error: body.message }, { status: body.status })
+  const parsed = parseAutomationFields(body.value, '', true)
+  if (!parsed.ok) {
+    return NextResponse.json({ error: 'Invalid automation', issues: [parsed.issue] }, { status: 400 })
   }
 
-  const body = await request.json().catch(() => null)
-  if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  const template = isObject(body.value) ? body.value.template : undefined
+  if (template !== undefined && typeof template !== 'string') {
+    return NextResponse.json({ error: 'template must be a string' }, { status: 400 })
+  }
 
-  const { name, description, trigger_type, trigger_config, is_active, steps, template } = body
+  const { is_active } = parsed.value
+  let {
+    name: effectiveName,
+    description: effectiveDescription,
+    trigger_type: effectiveTriggerType,
+    trigger_config: effectiveTriggerConfig,
+    steps: effectiveSteps,
+  } = parsed.value
 
-  let effectiveSteps: BuilderStepInput[] | undefined = steps
-  let effectiveName = name
-  let effectiveDescription = description
-  let effectiveTriggerType = trigger_type
-  let effectiveTriggerConfig = trigger_config
-
-  if (template && (!steps || steps.length === 0)) {
+  if (template && !effectiveSteps?.length) {
     const t = getTemplate(template)
     if (t) {
-      effectiveName = effectiveName ?? t.name
-      effectiveDescription = effectiveDescription ?? t.description
-      effectiveTriggerType = effectiveTriggerType ?? t.trigger_type
-      effectiveTriggerConfig = effectiveTriggerConfig ?? t.trigger_config
-      effectiveSteps = t.steps as unknown as BuilderStepInput[]
+      const parsedTemplate = parseSteps(t.steps, 'steps', true)
+      if (!parsedTemplate.ok) {
+        return NextResponse.json({ error: 'Invalid automation template' }, { status: 500 })
+      }
+      effectiveName ??= t.name
+      effectiveDescription ??= t.description
+      effectiveTriggerType ??= t.trigger_type
+      effectiveTriggerConfig ??= { ...t.trigger_config }
+      effectiveSteps = parsedTemplate.value
     }
   }
 
@@ -92,9 +83,7 @@ export async function POST(request: Request) {
   if (is_active) {
     const issues = [
       ...validateTriggerForActivation(effectiveTriggerType, effectiveTriggerConfig ?? {}),
-      ...validateStepsForActivation(
-        (effectiveSteps ?? []) as unknown as { step_type: string; step_config: Record<string, unknown> }[],
-      ),
+      ...validateStepsForActivation(effectiveSteps ?? []),
     ]
     if (issues.length > 0) {
       return NextResponse.json(
@@ -104,31 +93,22 @@ export async function POST(request: Request) {
     }
   }
 
-  const admin = supabaseAdmin()
-  const { data: automation, error: insertErr } = await admin
-    .from('automations')
-    .insert({
-      user_id: user.id,
-      account_id: accountId,
+  const { data, error } = await supabaseAdmin().rpc('create_automation_trees', {
+    p_account_id: ctx.accountId,
+    p_user_id: ctx.userId,
+    p_automations: [{
       name: effectiveName,
       description: effectiveDescription ?? null,
       trigger_type: effectiveTriggerType,
       trigger_config: effectiveTriggerConfig ?? {},
-      is_active: !!is_active,
-    })
-    .select()
-    .single()
-
-  if (insertErr || !automation) {
-    return NextResponse.json(
-      { error: insertErr?.message ?? 'insert failed' },
-      { status: 500 },
-    )
-  }
-
-  if (effectiveSteps && effectiveSteps.length > 0) {
-    const err = await insertSteps(automation.id, effectiveSteps)
-    if (err) return NextResponse.json({ error: err }, { status: 500 })
+      is_active: is_active ?? false,
+      steps: flattenSteps(effectiveSteps ?? []),
+    }],
+  })
+  const automation = data?.[0]
+  if (error || !automation) {
+    console.error('[POST /api/automations] insert failed:', error)
+    return NextResponse.json({ error: 'Could not create the automation' }, { status: 500 })
   }
 
   return NextResponse.json({ automation }, { status: 201 })
