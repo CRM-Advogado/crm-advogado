@@ -54,17 +54,12 @@ podem ser salvos incompletos de propósito.
 
 ---
 
-## 3. As 9 rotas de `/api/whatsapp/*` fora da convenção
+## 3. Autorização nas rotas de WhatsApp — corrigida
 
-**Onde:** `src/app/api/whatsapp/*` (exceto o webhook).
-
-São anteriores ao padrão `requireRole` + `toErrorResponse` e chamam
-`supabase.auth.getUser()` direto, sem `ctx`. Funcionam, mas cada uma
-resolve conta e papel do seu jeito, o que significa que uma mudança na
-política de acesso precisa ser replicada nove vezes.
-
-Já está no `CLAUDE.md` como armadilha. Aqui fica como dívida por ser
-trabalho pendente, não só uma peculiaridade a conhecer.
+As nove rotas legadas usam `requireRole` antes de acessar o provedor. Envio,
+disparo em massa e reação exigem `agent`. Configuração e gestão de modelos
+exigem `admin`. A leitura de mídia permanece disponível a `viewer` dentro
+da própria conta.
 
 ---
 
