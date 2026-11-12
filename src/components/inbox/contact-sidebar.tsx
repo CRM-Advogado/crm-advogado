@@ -147,7 +147,7 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
                 initials
               )}
             </div>
-            <h3 className="mt-3 text-sm font-semibold text-foreground">
+            <h3 className="mt-3 font-serif text-lg text-foreground">
               {displayName}
             </h3>
             {contact.company && (
@@ -194,12 +194,9 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
                 tags.map((tag) => (
                   <span
                     key={tag.contact_tag_id}
-                    className="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                    style={{
-                      backgroundColor: `${tag.color}20`,
-                      color: tag.color,
-                    }}
+                    className="group inline-flex items-center gap-1 rounded-full border border-border bg-muted py-0.5 pl-2 pr-1 text-[10px] font-medium text-foreground"
                   >
+                    <span aria-hidden className="size-2 shrink-0 rounded-full border" style={{ backgroundColor: tag.color }} />
                     {tag.name}
                   </span>
                 ))
@@ -235,12 +232,9 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
                       </span>
                       {deal.stage && (
                         <span
-                          className="rounded-full px-1.5 py-0.5 text-[10px]"
-                          style={{
-                            backgroundColor: `${deal.stage.color}20`,
-                            color: deal.stage.color,
-                          }}
+                          className="inline-flex items-center gap-1 rounded-full border border-border bg-card px-1.5 py-0.5 text-[10px] text-foreground"
                         >
+                          <span aria-hidden className="size-2 shrink-0 rounded-full border" style={{ backgroundColor: deal.stage.color }} />
                           {deal.stage.name}
                         </span>
                       )}

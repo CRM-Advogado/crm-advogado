@@ -99,14 +99,14 @@ export const NODE_META: Record<
   start: {
     label: 'Start',
     icon: PlayCircle,
-    color: 'text-emerald-400',
+    color: 'text-emerald-700 dark:text-emerald-300',
     blurb: 'Entry point of the flow',
     category: 'flow',
   },
   send_message: {
     label: 'Send message',
     icon: MessageCircle,
-    color: 'text-sky-400',
+    color: 'text-sky-700 dark:text-sky-300',
     blurb: 'Sends a WhatsApp text message',
     category: 'messaging',
   },
@@ -120,42 +120,42 @@ export const NODE_META: Record<
   send_list: {
     label: 'Send list',
     icon: ListPlus,
-    color: 'text-indigo-400',
+    color: 'text-indigo-700 dark:text-indigo-300',
     blurb: 'Sends a tappable list of options',
     category: 'messaging',
   },
   send_media: {
     label: 'Send media',
     icon: Paperclip,
-    color: 'text-cyan-400',
+    color: 'text-cyan-700 dark:text-cyan-300',
     blurb: 'Sends an image, video, or document',
     category: 'messaging',
   },
   collect_input: {
     label: 'Collect input',
     icon: Inbox,
-    color: 'text-teal-400',
+    color: 'text-teal-700 dark:text-teal-300',
     blurb: 'Asks a question, saves the reply',
     category: 'logic',
   },
   condition: {
     label: 'If / else',
     icon: GitFork,
-    color: 'text-fuchsia-400',
+    color: 'text-fuchsia-700 dark:text-fuchsia-300',
     blurb: 'Branches on a rule',
     category: 'logic',
   },
   set_tag: {
     label: 'Tag contact',
     icon: Tag,
-    color: 'text-pink-400',
+    color: 'text-pink-700 dark:text-pink-300',
     blurb: 'Adds or removes a contact tag',
     category: 'logic',
   },
   handoff: {
     label: 'Handoff to agent',
     icon: UserPlus,
-    color: 'text-amber-400',
+    color: 'text-amber-700 dark:text-amber-300',
     blurb: 'Hands the conversation to a human',
     category: 'flow',
   },
@@ -216,7 +216,7 @@ export interface NodeColors {
   soft: string;
   /** ~45% tint — hover border / focus ring. */
   ring: string;
-  /** Hue for the uppercase type label, kept readable in BOTH modes. */
+  /** Hue blended toward the foreground for small text on paper. */
   text: string;
 }
 
@@ -227,12 +227,7 @@ export function nodeColors(type: NodeType): NodeColors {
     solid,
     soft: `oklch(${t.l} ${t.c} ${t.h} / 0.14)`,
     ring: `oklch(${t.l} ${t.c} ${t.h} / 0.45)`,
-    // Blend the hue toward the live --foreground token so the label
-    // holds contrast in BOTH modes: in dark mode --foreground is
-    // near-white (the label lightens to read on the dark card), in
-    // light mode it's near-black (the label darkens to read on the
-    // white card). The old fixed-light value only worked on dark.
-    text: `color-mix(in oklch, ${solid}, var(--foreground) 38%)`,
+    text: `color-mix(in oklch, ${solid}, var(--foreground) 65%)`,
   };
 }
 
@@ -266,7 +261,7 @@ export function NodeIconChip({
         'flex shrink-0 items-center justify-center rounded-lg',
         className
       )}
-      style={{ width: size, height: size, background: c.soft, color: c.solid }}
+      style={{ width: size, height: size, background: c.soft, color: c.text }}
     >
       <Icon size={iconSize} />
     </span>

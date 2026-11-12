@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import type { Contact, Tag, ContactTag } from '@/types';
@@ -60,8 +60,8 @@ import { useTranslations } from 'next-intl';
 
 const PAGE_SIZE = 25;
 
-interface ContactWithTags extends Contact {
-  tags?: Tag[];
+interface ContactRow extends Contact {
+  tagIds: string[];
 }
 
 export default function ContactsPage() {
@@ -70,7 +70,7 @@ export default function ContactsPage() {
   const canEdit = useCan('send-messages');
   const canEditSettings = useCan('edit-settings');
 
-  const [contacts, setContacts] = useState<ContactWithTags[]>([]);
+  const [contactRows, setContactRows] = useState<ContactRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
@@ -96,6 +96,10 @@ export default function ContactsPage() {
 
   // All tags for display
   const [tagsMap, setTagsMap] = useState<Record<string, Tag>>({});
+  const contacts = useMemo(() => contactRows.map(({ tagIds, ...contact }) => ({
+    ...contact,
+    tags: tagIds.map((id) => tagsMap[id]).filter(Boolean),
+  })), [contactRows, tagsMap]);
 
   // Guards against out-of-order fetch responses: each fetchContacts run
   // claims a sequence number and only the latest is allowed to commit its
@@ -130,7 +134,7 @@ export default function ContactsPage() {
     const to = from + PAGE_SIZE - 1;
     const term = search.trim();
 
-    let contactRows: Contact[];
+    let rowsWithTagIds: ContactRow[];
     let count: number;
 
     if (selectedTagIds.length > 0) {
@@ -151,12 +155,26 @@ export default function ContactsPage() {
         return;
       }
       const rows = (data ?? []) as { contact: Contact; total_count: number }[];
-      contactRows = rows.map((r) => r.contact);
+      const tagsByContact: Record<string, string[]> = {};
+      if (rows.length > 0) {
+        const { data: contactTags } = await supabase
+          .from('contact_tags')
+          .select('contact_id, tag_id')
+          .in('contact_id', rows.map(({ contact }) => contact.id));
+        if (seq !== fetchSeq.current) return;
+        contactTags?.forEach(({ contact_id, tag_id }) => {
+          (tagsByContact[contact_id] ??= []).push(tag_id);
+        });
+      }
+      rowsWithTagIds = rows.map(({ contact }) => ({
+        ...contact,
+        tagIds: tagsByContact[contact.id] ?? [],
+      }));
       count = rows.length > 0 ? Number(rows[0].total_count) : 0;
     } else {
       let query = supabase
         .from('contacts')
-        .select('*', { count: 'exact' })
+        .select('*, contact_tags(tag_id)', { count: 'exact' })
         .order('created_at', { ascending: false })
         .range(from, to);
 
@@ -172,54 +190,24 @@ export default function ContactsPage() {
         setLoading(false);
         return;
       }
-      contactRows = data ?? [];
+      rowsWithTagIds = (data ?? []).map(({ contact_tags, ...contact }) => ({
+        ...contact,
+        tagIds: (contact_tags as Pick<ContactTag, 'tag_id'>[]).map(({ tag_id }) => tag_id),
+      }));
       count = exactCount ?? 0;
     }
 
     setTotalCount(count);
 
-    if (contactRows.length === 0) {
-      setContacts([]);
-      setLoading(false);
-      return;
-    }
-
-    // Fetch tags for these contacts
-    const contactIds = contactRows.map((c) => c.id);
-    const { data: contactTags } = await supabase
-      .from('contact_tags')
-      .select('contact_id, tag_id')
-      .in('contact_id', contactIds);
-    if (seq !== fetchSeq.current) return; // superseded by a newer fetch
-
-    const tagsByContact: Record<string, string[]> = {};
-    contactTags?.forEach((ct) => {
-      if (!tagsByContact[ct.contact_id]) tagsByContact[ct.contact_id] = [];
-      tagsByContact[ct.contact_id].push(ct.tag_id);
-    });
-
-    const enriched: ContactWithTags[] = contactRows.map((c) => ({
-      ...c,
-      tags: (tagsByContact[c.id] ?? [])
-        .map((tid) => tagsMap[tid])
-        .filter(Boolean),
-    }));
-
-    setContacts(enriched);
+    setContactRows(rowsWithTagIds);
     setLoading(false);
-  }, [supabase, page, search, selectedTagIds, tagsMap, t]);
+  }, [supabase, page, search, selectedTagIds, t]);
 
-  // Load-once-on-mount-ish data fetches. Each setter inside runs
-  // inside an async promise completion (Supabase await), not
-  // synchronously in the effect body, so the cascade the lint rule
-  // warns about doesn't apply here.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTags();
   }, [fetchTags]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchContacts();
   }, [fetchContacts]);
 
@@ -342,14 +330,14 @@ export default function ContactsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <header className="crm-enter flex flex-col gap-4 border-b border-border pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">{t('title')}</h1>
+          <h1 className="crm-title text-3xl text-foreground sm:text-4xl">{t('title')}</h1>
           <p className="text-sm text-muted-foreground mt-1">
             {totalCount > 0 ? t('subtitle', { count: totalCount }) : t('subtitleZero')}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {canEditSettings && (
             <Button
               variant="outline"
@@ -380,11 +368,11 @@ export default function ContactsPage() {
             {t('addContactBtn')}
           </GatedButton>
         </div>
-      </div>
+      </header>
 
       {/* Search + tag filter */}
-      <div className="space-y-2">
-        <div className="flex flex-col sm:flex-row gap-2">
+      <div className="space-y-3 rounded-xl border border-border bg-card p-3">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
@@ -471,12 +459,9 @@ export default function ContactsPage() {
               return (
                 <span
                   key={id}
-                  className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium"
-                  style={{
-                    backgroundColor: tag.color + '20',
-                    color: tag.color,
-                  }}
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground"
                 >
+                  <span aria-hidden className="size-2 shrink-0 rounded-full border" style={{ backgroundColor: tag.color }} />
                   {tag.name}
                   <button
                     onClick={() => toggleTagFilter(id)}
@@ -528,10 +513,10 @@ export default function ContactsPage() {
       )}
 
       {/* Table */}
-      <div className="rounded-lg border border-border overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
         <Table>
           <TableHeader>
-            <TableRow className="border-border hover:bg-transparent">
+            <TableRow className="border-border bg-card-2 hover:bg-card-2">
               <TableHead className="w-10">
                 <Checkbox
                   checked={allOnPageSelected}
@@ -590,7 +575,7 @@ export default function ContactsPage() {
               contacts.map((contact) => (
                 <TableRow
                   key={contact.id}
-                  className="border-border hover:bg-muted/50 cursor-pointer"
+                  className="cursor-pointer border-border transition-colors hover:bg-accent/50 data-[state=selected]:bg-accent/60 dark:hover:bg-primary-soft dark:data-[state=selected]:bg-primary-soft-2"
                   onClick={() => openDetail(contact.id)}
                 >
                   <TableCell onClick={(e) => e.stopPropagation()}>
@@ -618,12 +603,9 @@ export default function ContactsPage() {
                         contact.tags.slice(0, 3).map((tag) => (
                           <span
                             key={tag.id}
-                            className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
-                            style={{
-                              backgroundColor: tag.color + '20',
-                              color: tag.color,
-                            }}
+                            className="inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium text-foreground"
                           >
+                            <span aria-hidden className="size-2 shrink-0 rounded-full border" style={{ backgroundColor: tag.color }} />
                             {tag.name}
                           </span>
                         ))

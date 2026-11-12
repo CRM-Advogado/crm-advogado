@@ -31,9 +31,16 @@ import {
 } from '@/components/ui/accordion';
 import type { WhatsAppConfig as WhatsAppConfigType } from '@/types';
 
+import { WhatsAppEmbeddedSignup } from './whatsapp-embedded-signup';
+import { canEditSettings } from '@/lib/auth/roles';
+
 const MASKED_TOKEN = '••••••••••••••••';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'unknown';
+type WhatsAppConfigSummary = Pick<
+  WhatsAppConfigType,
+  'phone_number_id' | 'waba_id' | 'status' | 'registered_at' | 'last_registration_error'
+>;
 type ResetReason = 'token_corrupted' | 'meta_api_error' | null;
 
 export function WhatsAppConfig() {
@@ -44,14 +51,16 @@ export function WhatsAppConfig() {
   // context and key every read off it — so a teammate who just
   // joined an account sees the inviter's saved config without
   // having to re-enter anything.
-  const { user, accountId, loading: authLoading, profileLoading } = useAuth();
+  const { user, accountId, accountRole, loading: authLoading, profileLoading } = useAuth();
 
+  const userId = user?.id;
+  const canManageWhatsApp = accountRole !== null && canEditSettings(accountRole);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [showToken, setShowToken] = useState(false);
-  const [config, setConfig] = useState<WhatsAppConfigType | null>(null);
+  const [config, setConfig] = useState<WhatsAppConfigSummary | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('unknown');
   const [resetReason, setResetReason] = useState<ResetReason>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
@@ -105,7 +114,7 @@ export function WhatsAppConfig() {
       // remains accurate.
       const { data, error } = await supabase
         .from('whatsapp_config')
-        .select('*')
+        .select('phone_number_id, waba_id, status, registered_at, last_registration_error')
         .eq('account_id', acctId)
         .maybeSingle();
 
@@ -134,7 +143,7 @@ export function WhatsAppConfig() {
       setRegistrationProbe(null);
 
       // Then verify health via the API (decrypts token + pings Meta)
-      if (data) {
+      if (data && canManageWhatsApp) {
         try {
           const res = await fetch('/api/whatsapp/config', { method: 'GET' });
           const payload = await res.json();
@@ -153,7 +162,7 @@ export function WhatsAppConfig() {
           setConnectionStatus('disconnected');
         }
       } else {
-        setConnectionStatus('disconnected');
+        setConnectionStatus(data?.status === 'connected' ? 'connected' : 'disconnected');
         setResetReason(null);
         setStatusMessage('');
       }
@@ -163,7 +172,7 @@ export function WhatsAppConfig() {
     } finally {
       setLoading(false);
     }
-  }, [supabase]);
+  }, [supabase, canManageWhatsApp]);
 
   useEffect(() => {
     // Need both the auth session (`!authLoading`) AND the profile
@@ -172,7 +181,7 @@ export function WhatsAppConfig() {
     // for the first render window and bail without ever retrying
     // once the profile arrives.
     if (authLoading || profileLoading) return;
-    if (!user || !accountId) {
+    if (!userId || !accountId) {
       loadedAccountIdRef.current = null;
       setLoading(false);
       return;
@@ -180,9 +189,10 @@ export function WhatsAppConfig() {
     if (loadedAccountIdRef.current === accountId) return;
     loadedAccountIdRef.current = accountId;
     fetchConfig(accountId);
-  }, [authLoading, profileLoading, user?.id, accountId, fetchConfig]);
+  }, [authLoading, profileLoading, userId, accountId, fetchConfig]);
 
   async function handleSave() {
+    if (!canManageWhatsApp) return;
     if (!phoneNumberId.trim()) {
       toast.error('Phone Number ID is required');
       return;
@@ -278,6 +288,7 @@ export function WhatsAppConfig() {
   }
 
   async function handleTestConnection() {
+    if (!canManageWhatsApp) return;
     try {
       setTesting(true);
       const res = await fetch('/api/whatsapp/config', { method: 'GET' });
@@ -308,6 +319,7 @@ export function WhatsAppConfig() {
   }
 
   async function handleVerifyRegistration() {
+    if (!canManageWhatsApp) return;
     setVerifyingRegistration(true);
     setRegistrationProbe(null);
     try {
@@ -334,6 +346,7 @@ export function WhatsAppConfig() {
   }
 
   async function handleReset() {
+    if (!canManageWhatsApp) return;
     if (!confirm('This will delete the current WhatsApp config so you can re-enter it. Continue?')) {
       return;
     }
@@ -373,7 +386,7 @@ export function WhatsAppConfig() {
 
   if (loading) {
     return (
-      <section className="animate-in fade-in-50 duration-200">
+      <section className="motion-safe:animate-in motion-safe:fade-in-50 duration-200">
         <SettingsPanelHead
           title={t("title")}
           description={t("description")}
@@ -388,7 +401,7 @@ export function WhatsAppConfig() {
   const showResetBanner = resetReason === 'token_corrupted';
 
   return (
-    <section className="animate-in fade-in-50 duration-200">
+    <section className="motion-safe:animate-in motion-safe:fade-in-50 duration-200">
       <SettingsPanelHead
         title={t("title")}
         description={t("description")}
@@ -396,11 +409,19 @@ export function WhatsAppConfig() {
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
       {/* Main config form */}
       <div className="space-y-6">
+      {canManageWhatsApp && (
+        <WhatsAppEmbeddedSignup
+          key={accountId}
+          onConnected={() => {
+            if (accountId) void fetchConfig(accountId);
+          }}
+        />
+      )}
         {/* Corrupted-token reset banner */}
         {showResetBanner && (
           <Alert className="bg-amber-950/40 border-amber-600/40">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="size-5 text-amber-400 mt-0.5 shrink-0" />
+              <AlertTriangle className="size-5 text-amber-800 dark:text-amber-300 mt-0.5 shrink-0" />
               <div className="flex-1">
                 <AlertTitle className="text-amber-200 mb-1">
                   Stored token can&apos;t be decrypted
@@ -410,7 +431,7 @@ export function WhatsAppConfig() {
                 </AlertDescription>
                 <Button
                   onClick={handleReset}
-                  disabled={resetting}
+                  disabled={!canManageWhatsApp || resetting}
                   size="sm"
                   className="mt-3 bg-amber-600 hover:bg-amber-700 text-white"
                 >
@@ -467,9 +488,9 @@ export function WhatsAppConfig() {
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
                 {isRegistered ? (
-                  <CheckCircle2 className="size-4 text-emerald-400" />
+                  <CheckCircle2 className="size-4 text-emerald-800 dark:text-emerald-300" />
                 ) : (
-                  <AlertTriangle className="size-4 text-amber-400" />
+                  <AlertTriangle className="size-4 text-amber-800 dark:text-amber-300" />
                 )}
                 <AlertTitle
                   className={
@@ -485,7 +506,7 @@ export function WhatsAppConfig() {
                 variant="outline"
                 size="sm"
                 onClick={handleVerifyRegistration}
-                disabled={verifyingRegistration}
+                disabled={!canManageWhatsApp || verifyingRegistration}
                 className="border-border bg-transparent text-foreground hover:bg-muted h-7"
               >
                 {verifyingRegistration ? (
@@ -524,7 +545,7 @@ export function WhatsAppConfig() {
               <div className="mt-3 rounded border border-border bg-card/60 px-3 py-2 space-y-1.5 text-[11px]">
                 <p className="font-medium text-foreground">
                   {t('diagnosticLastRun')}
-                  <span className={registrationProbe.live ? 'text-emerald-400' : 'text-amber-400'}>
+                  <span className={registrationProbe.live ? 'text-emerald-800 dark:text-emerald-300' : 'text-amber-800 dark:text-amber-300'}>
                     {registrationProbe.live ? t('live') : t('notLive')}
                   </span>
                 </p>
@@ -532,7 +553,7 @@ export function WhatsAppConfig() {
                   {Object.entries(registrationProbe.checks).map(([k, v]) => (
                     <li key={k} className="flex items-center gap-1.5">
                       {v === true ? (
-                        <CheckCircle2 className="size-3 text-emerald-400 shrink-0" />
+                        <CheckCircle2 className="size-3 text-emerald-800 dark:text-emerald-300 shrink-0" />
                       ) : v === false ? (
                         <XCircle className="size-3 text-red-400 shrink-0" />
                       ) : (
@@ -687,7 +708,7 @@ export function WhatsAppConfig() {
         <div className="flex flex-wrap gap-3">
           <Button
             onClick={handleSave}
-            disabled={saving}
+            disabled={!canManageWhatsApp || saving}
             className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {saving ? (
@@ -702,7 +723,7 @@ export function WhatsAppConfig() {
           <Button
             variant="outline"
             onClick={handleTestConnection}
-            disabled={testing || !config}
+            disabled={!canManageWhatsApp || testing || !config}
             className="border-border text-muted-foreground hover:text-foreground hover:bg-muted"
           >
             {testing ? (
@@ -721,7 +742,7 @@ export function WhatsAppConfig() {
             <Button
               variant="outline"
               onClick={handleReset}
-              disabled={resetting}
+              disabled={!canManageWhatsApp || resetting}
               className="border-red-900 text-red-400 hover:text-red-300 hover:bg-red-950/40"
             >
               {resetting ? (

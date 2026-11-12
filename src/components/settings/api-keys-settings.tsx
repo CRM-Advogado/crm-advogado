@@ -135,7 +135,7 @@ export function ApiKeysSettings() {
   }
 
   return (
-    <section className="animate-in fade-in-50 space-y-6 duration-200">
+    <section className="motion-safe:animate-in motion-safe:fade-in-50 space-y-6 duration-200">
       <SettingsPanelHead
         title={t('title')}
         description={
@@ -248,7 +248,7 @@ export function ApiKeysSettings() {
                           size="sm"
                           onClick={() => handleRevoke(k)}
                           disabled={revoking === k.id}
-                          className="self-start border-red-500/40 bg-red-500/10 text-red-300 hover:border-red-500/60 hover:bg-red-500/20 hover:text-red-200 sm:self-auto"
+                          className="self-start border-red-500/40 bg-red-500/10 text-red-800 dark:text-red-300 hover:border-red-500/60 hover:bg-red-500/20 hover:text-red-800 dark:hover:text-red-300 sm:self-auto"
                         >
                           {revoking === k.id ? (
                             <Loader2 className="size-4 animate-spin" />

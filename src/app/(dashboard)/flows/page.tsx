@@ -63,7 +63,7 @@ const STATUS_LABELS = (t: ReturnType<typeof useTranslations>): Record<FlowRow["s
 
 const STATUS_COLORS: Record<FlowRow["status"], string> = {
   draft: "border-border bg-muted text-muted-foreground",
-  active: "border-emerald-600/40 bg-emerald-500/10 text-emerald-300",
+  active: "border-emerald-600/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300",
   archived: "border-border bg-muted/50 text-muted-foreground",
 };
 
@@ -200,12 +200,12 @@ export default function FlowsPage() {
   }
 
   return (
-    <div className="space-y-6 p-6">
-      <header className="flex flex-wrap items-end justify-between gap-3">
+    <div className="space-y-6">
+      <header className="crm-enter flex flex-wrap items-end justify-between gap-3 border-b border-border pb-5">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-foreground">{t("title")}</h1>
-            <span className="inline-flex items-center rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-300">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="crm-title text-3xl sm:text-4xl">{t("title")}</h1>
+            <span className="inline-flex items-center rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300">
               {t("beta")}
             </span>
           </div>
@@ -333,11 +333,11 @@ function EmptyState({
   t: ReturnType<typeof useTranslations>;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card/50 px-6 py-16 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-        <Workflow className="h-6 w-6 text-muted-foreground" />
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card px-6 py-16 text-center">
+      <div className="grid size-12 place-items-center rounded-xl border border-border bg-accent text-accent-foreground">
+        <Workflow className="size-5" />
       </div>
-      <h2 className="mt-4 text-base font-medium text-foreground">
+      <h2 className="mt-4 font-serif text-xl text-foreground">
         {t("emptyTitle")}
       </h2>
       <p className="mt-1 max-w-md text-sm text-muted-foreground">
@@ -375,10 +375,12 @@ function FlowCard({
         ? Archive
         : PauseCircle;
   return (
-    <div className="flex flex-col rounded-lg border border-border bg-card p-4 transition-colors hover:border-border">
+    <div className="flex flex-col rounded-xl border border-border bg-card p-4 transition-colors focus-within:border-primary/40 hover:border-primary/40">
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <Workflow className="h-4 w-4 shrink-0 text-primary" />
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border bg-accent text-accent-foreground">
+            <Workflow className="size-4" />
+          </span>
           <h3 className="truncate text-sm font-semibold text-foreground">
             {flow.name}
           </h3>
@@ -415,7 +417,7 @@ function FlowCard({
           variant="ghost"
           size="sm"
           onClick={onDelete}
-          className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+          className="text-red-700 dark:text-red-300 hover:bg-red-500/10 hover:text-red-800 dark:hover:text-red-200"
         >
           <Trash2 className="h-3.5 w-3.5" />
           {t("delete")}

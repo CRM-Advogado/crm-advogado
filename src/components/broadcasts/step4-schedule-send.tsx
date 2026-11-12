@@ -95,7 +95,7 @@ export function Step4ScheduleSend({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-foreground">{t('scheduleSend.title')}</h2>
+        <h2 className="font-serif text-2xl text-foreground">{t('scheduleSend.title')}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           {t('scheduleSend.subtitle')}
         </p>
@@ -174,7 +174,7 @@ export function Step4ScheduleSend({
           {t('back')}
         </Button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
           {onSaveDraft && (
             <Button
               variant="outline"

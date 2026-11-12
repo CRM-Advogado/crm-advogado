@@ -173,15 +173,11 @@ export function TagManager() {
                 {tags.map((tag) => (
                   <span
                     key={tag.id}
-                    className="group inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-colors"
-                    style={{
-                      backgroundColor: `${tag.color}20`,
-                      color: tag.color,
-                      border: `1px solid ${tag.color}40`,
-                    }}
+                    className="group inline-flex items-center gap-1.5 rounded-full border border-border bg-card-2 px-3 py-1.5 text-sm font-medium text-foreground"
                   >
                     <span
-                      className="size-2 rounded-full"
+                      aria-hidden="true"
+                      className="size-2 rounded-full ring-1 ring-foreground/25"
                       style={{ backgroundColor: tag.color }}
                     />
                     {tag.name}

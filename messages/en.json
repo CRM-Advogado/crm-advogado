@@ -14,6 +14,13 @@
     "noAccount": "Don't have an account?",
     "createAccount": "Create account"
   },
+  "SignupPage": {
+    "title": "Create account",
+    "description": "Create an account to get started with Cérebro CRM."
+  },
+  "Appearance": {
+    "darkMode": "Dark mode"
+  },
   "Sidebar": {
     "title": "Cérebro CRM",
     "dashboard": "Dashboard",
@@ -72,7 +79,8 @@
       "newTodayVsYesterday": "new today vs yesterday",
       "vsYesterday": "vs yesterday",
       "closedDeals": "{count} closed {count, plural, =1 {contract} other {contracts}}",
-      "noChange": "No change {suffix}"
+      "noChange": "No change {suffix}",
+      "metricsUnavailable": "Unable to load the summary metrics."
     },
     "quickActions": {
       "newContact": "New Contact",
@@ -1016,7 +1024,7 @@
         "agentLabel": "Agent",
         "fieldLabel": "Field",
         "valueLabel": "Value",
-        "placeholderValue": "Text or {{ vars.x }} / {{ message.text }}",
+        "placeholderValue": "Text or '{{ vars.x }}' / '{{ message.text }}'",
         "titleLabel": "Title",
         "amountLabel": "Amount",
         "unitLabel": "Unit",
@@ -1075,7 +1083,7 @@
         "addVariable": "Add variable",
         "duplicateVariableHint": "Two variables share the same name — only the last one is saved.",
         "sendViaWhatsappLabel": "Send the signing link over WhatsApp",
-        "signatureMessageHint": "Use the token {{signer_url}} where the signing link should go.",
+        "signatureMessageHint": "Use the token '{{signer_url}}' where the signing link should go.",
         "zapsignNotConfiguredHint": "No templates found — paste the template token directly, or configure ZapSign in Settings first.",
         "collectMissingFieldsLabel": "Ask the signer to fill the template form",
         "collectMissingFieldsHint": "Sends the signer to the ZapSign template form before signing, to complete the fields this step did not fill."
@@ -1393,7 +1401,7 @@
       "labelTooLong": "Label must be {max} characters or fewer",
       "copied": "Invite link copied",
       "clipboardBlocked": "Clipboard blocked — copy the link manually",
-      "whatsappMessage": "Join {accountName} on wacrm using this link (valid for {expiresInDays} days): {url}"
+      "whatsappMessage": "Join {accountName} on Cérebro CRM using this link (valid for {expiresInDays} days): {url}"
     },
     "tagsAndFields": {
       "title": "Fields & tags",
@@ -1468,9 +1476,9 @@
       "headerImage": "Image",
       "headerVideo": "Video",
       "headerDocument": "Document",
-      "headerTextPlaceholder": "Header text (max 60 chars, optional {{1}})",
+      "headerTextPlaceholder": "Header text (max 60 chars, optional '{{1}}')",
       "headerSampleAria": "Sample value for header variable",
-      "headerSamplePlaceholder": "Sample value for {{1}} (required for Meta review)",
+      "headerSamplePlaceholder": "Sample value for '{{1}}' (required for Meta review)",
       "uploadImage": "Upload image",
       "uploadHint": "JPEG or PNG, ≤5 MB",
       "mediaUrlPlaceholder": "https://… (or paste a public {format} link)",
@@ -1479,8 +1487,8 @@
       "videoHint": " Recommended: MP4 / 3GPP, ≤16 MB, ≤60 seconds.",
       "documentHint": " Recommended: PDF, ≤100 MB.",
       "bodyText": "Body Text",
-      "bodyPlaceholder": "Hello {{1}}, your order {{2}} is confirmed.",
-      "bodyHint": "Use {{1}}, {{2}} for variables (must be contiguous starting at {{1}}).",
+      "bodyPlaceholder": "Hello '{{1}}', your order '{{2}}' is confirmed.",
+      "bodyHint": "Use '{{1}}', '{{2}}' for variables (must be contiguous starting at '{{1}}').",
       "sampleValues": "Sample values (Meta uses these to review your template)",
       "sampleAria": "Sample value for body variable {var}",
       "samplePlaceholder": "Sample for {var}",
@@ -1494,8 +1502,8 @@
       "btnPhone": "Phone",
       "btnCopyCode": "Copy Code",
       "btnLabelPlaceholder": "Button label",
-      "urlPlaceholder": "https://example.com/path or with {{1}} suffix",
-      "urlSamplePlaceholder": "Example value for {{1}} (required when URL has a variable)",
+      "urlPlaceholder": "https://example.com/path or with '{{1}}' suffix",
+      "urlSamplePlaceholder": "Example value for '{{1}}' (required when URL has a variable)",
       "phonePlaceholder": "+15551234567",
       "codePlaceholder": "Example code (e.g. SUMMER20)",
       "cancel": "Cancel",
@@ -1504,8 +1512,8 @@
       "saveResubmit": "Save & Resubmit",
       "submitApproval": "Submit for Approval",
       "deleteDialogTitle": "Delete template?",
-      "deleteMetaDesc": "\"{name}\" will be deleted from Meta and from wacrm. Active broadcasts using this template will start failing on their next send. This can't be undone.",
-      "deleteLocalDesc": "\"{name}\" will be deleted from wacrm. It was never submitted to Meta, so no remote cleanup is needed.",
+      "deleteMetaDesc": "\"{name}\" will be deleted from Meta and from Cérebro CRM. Active broadcasts using this template will start failing on their next send. This can't be undone.",
+      "deleteLocalDesc": "\"{name}\" will be deleted from Cérebro CRM. It was never submitted to Meta, so no remote cleanup is needed.",
       "deleting": "Deleting…",
       "delete": "Delete",
       "toastLoadFailed": "Failed to load templates",
@@ -1546,7 +1554,7 @@
       "notConnected": "Not Connected",
       "connectedDesc": "Your access token authenticates with Meta. See Registration status below for whether webhooks are actually wired.",
       "notConnectedDesc": "Configure your Meta API credentials below to connect your WhatsApp Business account.",
-      "registered": "Registered — Meta will deliver events to wacrm",
+      "registered": "Registered — Meta will deliver events to Cérebro CRM",
       "notRegistered": "Not registered — Meta will not deliver events",
       "verifyWithMeta": "Verify with Meta",
       "subscribedSince": "Subscribed since {date}. Click Verify with Meta if events stop arriving.",
@@ -1570,7 +1578,7 @@
       "twoStepPin": "Two-step verification PIN",
       "optional": "(optional)",
       "pinPlaceholder": "6-digit PIN from Meta WhatsApp Manager",
-      "pinHint": "Needed only to wire inbound messages for a production number. Set it in Meta Business Manager → WhatsApp Accounts → Phone Numbers → Two-step verification, then paste it here so wacrm can subscribe the number — otherwise Meta routes inbound events to whichever app last claimed it (the symptom that hits second numbers under a shared WABA). Meta test numbers have no PIN and are pre-registered — leave this blank for them. Leaving it blank also keeps an existing registration untouched.",
+      "pinHint": "Needed only to wire inbound messages for a production number. Set it in Meta Business Manager → WhatsApp Accounts → Phone Numbers → Two-step verification, then paste it here so Cérebro CRM can subscribe the number — otherwise Meta routes inbound events to whichever app last claimed it (the symptom that hits second numbers under a shared WABA). Meta test numbers have no PIN and are pre-registered — leave this blank for them. Leaving it blank also keeps an existing registration untouched.",
       "webhookTitle": "Webhook Configuration",
       "webhookDesc": "Use this URL as your webhook callback in the Meta App Dashboard.",
       "webhookUrl": "Webhook Callback URL",
@@ -1607,6 +1615,7 @@
       "profile": "Your profile",
       "security": "Login & security",
       "appearance": "Appearance",
+      "google-calendar": "Google Calendar",
       "whatsapp": "WhatsApp",
       "templates": "Templates",
       "quick-replies": "Quick replies",
@@ -1736,7 +1745,7 @@
     },
     "aiConfig": {
       "title": "Agent setup",
-      "description": "Bring your own OpenAI or Anthropic key. wacrm calls the provider directly with your key — no per-seat AI fees, and your data stays yours. This powers AI-drafted replies in the inbox, the auto-reply bot, and the Playground.",
+      "description": "Bring your own OpenAI or Anthropic key. Cérebro CRM calls the provider directly with your key — no per-seat AI fees, and your data stays yours. This powers AI-drafted replies in the inbox, the auto-reply bot, and the Playground.",
       "adminOnlyConfig": "Only admins and owners can change the AI configuration.",
       "loadFailed": "Failed to load AI configuration",
       "providerAndKey": "Provider & key",
@@ -1793,7 +1802,7 @@
       "removeSuccess": "ZapSign configuration removed.",
       "removeFailed": "Failed to remove.",
       "webhookSectionTitle": "Webhook",
-      "webhookSectionDesc": "Paste this URL into ZapSign → Settings → Integrations → Webhooks so wacrm learns when a document is signed.",
+      "webhookSectionDesc": "Paste this URL into ZapSign → Settings → Integrations → Webhooks so Cérebro CRM learns when a document is signed.",
       "webhookUrlLabel": "Webhook URL",
       "webhookUrlHint": "Shown only once — copy it now. Use \"Regenerate\" below if you lose it.",
       "copyUrl": "Copy URL",
@@ -1875,5 +1884,26 @@
     "retry": "Retry",
     "toastMarkReadFailed": "Failed to mark notification as read",
     "toastMarkAllFailed": "Failed to mark all as read"
+  },
+  "whatsappSignup": {
+    "title": "Connect WhatsApp with Meta",
+    "description": "Authorize your office’s WhatsApp without copying tokens or IDs.",
+    "numberHint": "This connection is for Cloud API numbers. If you use the WhatsApp Business mobile app and want to keep it, contact support before continuing.",
+    "pinLabel": "Six-digit security PIN",
+    "pinHint": "Use the number’s two-step verification PIN. For a new number, choose a PIN and keep it in a safe place.",
+    "connect": "Prepare connection",
+    "openMeta": "Continue with Meta",
+    "back": "Back",
+    "working": "Connecting…",
+    "waiting": "Complete authorization in the Meta window.",
+    "saving": "Verifying the number and activating incoming messages…",
+    "success": "WhatsApp connected. Test sending and receiving a message.",
+    "alreadyConnected": "Your office already has a connection. Its configuration is shown below.",
+    "unavailable": "Guided connection is not enabled yet. Contact support to set it up; manual connection is still available below.",
+    "loading": "Checking availability…",
+    "sdkError": "Unable to load Meta. Check your connection or content blocker and reload the page.",
+    "setupError": "Unable to check the connection. Reload the page or contact support.",
+    "cancelled": "Authorization cancelled. No connection was saved. You can try again.",
+    "timeout": "Authorization took longer than expected. Restart the connection."
   }
 }

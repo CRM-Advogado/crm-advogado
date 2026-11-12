@@ -80,9 +80,9 @@ Everything is multi-tenant by `account_id`. Roles: `owner > admin > agent > view
   `canManageMembers`…). Use the predicates in route guards and UI gates;
   they mirror the SQL helper `is_account_member(account_id, min_role)` from
   migration 017.
-- **Known exception:** the 9 routes in `src/app/api/whatsapp/*` (excluding the
-  webhook) predate this convention and call `supabase.auth.getUser()` directly.
-  When editing them, don't assume `ctx` exists. New routes use `requireRole`.
+- **WhatsApp dashboard routes:** require `agent` for sends, broadcasts, and
+  reactions, `admin` for configuration and template management, and `viewer`
+  for account-scoped media reads. Enforce the role before calling a provider.
 - **No user session:** `/api/*/cron` authenticates via the `x-cron-secret`
   header against `AUTOMATION_CRON_SECRET`; `/api/whatsapp/webhook` validates
   HMAC (`x-hub-signature-256`); `/api/invitations/[token]/peek` is public by design.

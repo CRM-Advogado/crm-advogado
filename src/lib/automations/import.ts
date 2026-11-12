@@ -1,6 +1,7 @@
 import type { AutomationTriggerType } from '@/types';
 import type { BuilderStepInput } from './steps-tree';
 import { CUSTOM_FIELD_PREFIX } from './contact-fields';
+import { AUTOMATION_LIMITS as IMPORT_LIMITS, isObject, parseAutomationFields } from './input';
 import {
   validateStepsForActivation,
   validateTriggerForActivation,
@@ -9,28 +10,10 @@ import {
 // ------------------------------------------------------------
 // Import de automações a partir de um documento JSON.
 //
-// Por que este módulo existe separado da rota: `validate.ts` é um
-// PORTÃO DE ATIVAÇÃO, não um sanitizador de entrada. A rota
-// `POST /api/automations` só o chama quando `is_active` é verdadeiro
-// (route.ts:92), porque até agora o único produtor de payload era o
-// builder, que não consegue emitir um `step_type` inexistente nem uma
-// árvore de dez mil níveis. Um arquivo enviado por upload consegue as
-// duas coisas.
-//
-// Então tudo aqui roda SEMPRE, independente de `is_active`:
-//
-//   1. forma do envelope e limites (quantidade, passos, profundidade);
-//   2. lista fechada de `trigger_type` / `step_type`;
-//   3. descarte de `id` — `insertSteps` usa `s.id ?? uid()`
-//      (steps-tree.ts:67), então aceitar o campo deixaria o arquivo
-//      escolher as chaves primárias de `automation_steps`;
-//   4. resolução de referências contra o catálogo DA CONTA — é aqui
-//      que mora a checagem de posse: um `tag_id` de outro inquilino
-//      não está no catálogo e vira `unresolved_reference`. Sem isso o
-//      import passaria, porque a gravação usa o cliente service-role,
-//      que ignora RLS;
-//   5. as mesmas regras de `validate.ts` que o builder já respeita.
-//
+// O parser compartilhado valida a estrutura, os tipos e os limites.
+// O import também resolve referências contra o catálogo da conta,
+// verifica a configuração completa e mantém os caminhos do arquivo
+// nos erros exibidos na prévia.
 // O módulo é puro de propósito — recebe o catálogo pronto em vez de
 // consultar o Supabase — para ser testável sem tocar o banco, como
 // manda a convenção de `src/lib`. A parte impura vive em
@@ -41,21 +24,7 @@ import {
 /** Versão do formato do arquivo. Mudança incompatível vira 2. */
 export const IMPORT_FORMAT_VERSION = 1;
 
-export const IMPORT_LIMITS = {
-  /** Teto do corpo cru, antes do parse de JSON. */
-  maxBytes: 512 * 1024,
-  maxAutomations: 50,
-  maxStepsPerAutomation: 100,
-  /**
-   * Profundidade de aninhamento de condições. Tanto o `walk` de
-   * steps-tree.ts quanto o de validate.ts descem por `branches` sem
-   * limite nenhum: uma árvore suficientemente profunda estoura a
-   * pilha DENTRO do validador, antes que ele consiga recusar o
-   * arquivo. O corte precisa vir antes de qualquer recursão sobre a
-   * entrada — por isso ele está aqui, e não lá.
-   */
-  maxDepth: 10,
-} as const;
+export { AUTOMATION_LIMITS as IMPORT_LIMITS } from './input';
 
 export type ImportIssueCode =
   | 'invalid_document'
@@ -72,7 +41,7 @@ export interface ImportIssue {
   code: ImportIssueCode;
 }
 
-/** Uma automação pronta para `insertSteps`, com os IDs já resolvidos. */
+/** Uma automação pronta para persistir, com os IDs já resolvidos. */
 export interface ParsedAutomation {
   name: string;
   description: string | null;
@@ -120,63 +89,6 @@ export const EMPTY_CATALOG: ReferenceCatalog = {
   agents: [],
   customFields: [],
 };
-
-// ------------------------------------------------------------
-// Listas fechadas
-//
-// Duplicadas dos tipos de `@/types` de propósito: `AutomationStepType`
-// é um tipo, apagado na compilação, e o que se precisa aqui é de um
-// valor em tempo de execução para recusar entrada desconhecida.
-//
-// O preço da duplicação é que ela precisa ser mantida à mão: um tipo
-// acrescentado por migration ao motor e a `validate.ts` continua sendo
-// recusado aqui como `unknown_type` até alguém lembrar destas duas
-// listas. Foi o que aconteceu com o par do ZapSign (migration 044),
-// que o export já emitia e o import recusava — um round-trip quebrado
-// pelo próprio produtor do formato. Ao acrescentar tipo, edite
-// `@/types`, `validate.ts` e ESTE arquivo na mesma alteração.
-// ------------------------------------------------------------
-
-const TRIGGER_TYPES = new Set<string>([
-  'new_message_received',
-  'first_inbound_message',
-  'keyword_match',
-  'new_contact_created',
-  'conversation_assigned',
-  'tag_added',
-  'time_based',
-  'interactive_reply',
-  'deal_created',
-  'deal_stage_changed',
-  'deal_stalled',
-  'practice_area_set',
-  // Migration 044. Anunciado pelo webhook de entrada do ZapSign; o
-  // único campo de `trigger_config` é `template_token`, que é um token
-  // do ZapSign e não uma referência a registro desta conta — por isso
-  // não aparece em `resolveTriggerRefs`.
-  'document_signed',
-]);
-
-const STEP_TYPES = new Set<string>([
-  'send_message',
-  'send_buttons',
-  'send_list',
-  'send_template',
-  'add_tag',
-  'remove_tag',
-  'assign_conversation',
-  'update_contact_field',
-  'create_deal',
-  'move_deal_stage',
-  'wait',
-  'condition',
-  'send_webhook',
-  'close_conversation',
-  // Migration 044. `template_token` e as chaves de `variables` são do
-  // ZapSign, não do catálogo da conta, então também não há referência a
-  // resolver — `validate.ts` já cobra os campos obrigatórios.
-  'send_signature_request',
-]);
 
 // ------------------------------------------------------------
 // Resolução de uma referência
@@ -259,7 +171,7 @@ export function parseImportDocument(
   const issues: ImportIssue[] = [];
   const out: ParsedAutomation[] = [];
 
-  if (!isPlainObject(raw)) {
+  if (!isObject(raw)) {
     issues.push({
       path: '',
       message: 'document must be a JSON object',
@@ -337,7 +249,7 @@ function parseOne(
   catalog: ReferenceCatalog,
   issues: ImportIssue[]
 ): ParsedAutomation | null {
-  if (!isPlainObject(entry)) {
+  if (!isObject(entry)) {
     issues.push({
       path,
       message: 'automation must be an object',
@@ -355,14 +267,17 @@ function parseOne(
     });
   }
 
-  const triggerType =
-    typeof entry.trigger_type === 'string' ? entry.trigger_type : '';
-  if (!TRIGGER_TYPES.has(triggerType)) {
+  const fields = parseAutomationFields(entry, path);
+  if (!fields.ok) {
+    issues.push(fields.issue);
+    return null;
+  }
+
+  const { trigger_type: triggerType } = fields.value;
+  if (!triggerType) {
     issues.push({
-      path: `${path}.trigger_type`,
-      message: triggerType
-        ? `unknown trigger type '${triggerType}'`
-        : 'trigger_type is required',
+      path: path + '.trigger_type',
+      message: 'trigger_type is required',
       code: 'unknown_type',
     });
     return null;
@@ -372,9 +287,7 @@ function parseOne(
   // referência que já falhou. Ver `RefTarget.validateBase`.
   const suppress = new Set<string>();
 
-  const triggerConfig = isPlainObject(entry.trigger_config)
-    ? { ...entry.trigger_config }
-    : {};
+  const triggerConfig = { ...fields.value.trigger_config };
   resolveTriggerRefs(
     triggerType,
     triggerConfig,
@@ -387,41 +300,20 @@ function parseOne(
     suppress
   );
 
-  const rawSteps = entry.steps;
-  if (rawSteps !== undefined && !Array.isArray(rawSteps)) {
-    issues.push({
-      path: `${path}.steps`,
-      message: 'steps must be an array',
-      code: 'invalid_document',
-    });
-    return null;
-  }
-
-  const counter = { nodes: 0 };
-  const steps = normalizeSteps(
-    (rawSteps ?? []) as unknown[],
-    `${path}.steps`,
-    `${path}.`,
-    1,
-    counter,
-    catalog,
-    issues,
-    suppress
-  );
+  const steps = fields.value.steps ?? [];
+  resolveStepTree(steps, path + '.steps', path + '.', catalog, issues, suppress);
 
   // `is_active` ausente vale falso. Importar dezenas de automações já
   // ligadas dispararia mensagens reais no WhatsApp de clientes no
   // instante do upload; ligar é uma escolha que o arquivo precisa
   // declarar, e que a prévia mostra antes de qualquer gravação.
-  const isActive = entry.is_active === true;
+  const isActive = fields.value.is_active ?? false;
 
-  // As mesmas regras do builder, mas SEM o `if (is_active)` da rota:
-  // um rascunho importado continua sendo um arquivo que ninguém
-  // revisou, e é o único caminho pelo qual um `step_config` arbitrário
-  // chegaria ao banco.
+  // A prévia de importação continua exigindo configuração completa,
+  // mesmo quando o arquivo pede para manter a automação desativada.
   const validated = [
     ...validateTriggerForActivation(triggerType, triggerConfig),
-    ...validateStepsForActivation(steps as never),
+    ...validateStepsForActivation(steps),
   ];
   for (const issue of validated) {
     const full = `${path}.${issue.path}`;
@@ -436,140 +328,44 @@ function parseOne(
 
   return {
     name,
-    description:
-      typeof entry.description === 'string' && entry.description.trim() !== ''
-        ? entry.description.trim()
-        : null,
-    trigger_type: triggerType as AutomationTriggerType,
+    description: fields.value.description?.trim() || null,
+    trigger_type: triggerType,
     trigger_config: triggerConfig,
     is_active: isActive,
     steps,
   };
 }
 
-function normalizeSteps(
-  raw: unknown[],
+function resolveStepTree(
+  steps: BuilderStepInput[],
   path: string,
-  /**
-   * Prefixo no formato de `validate.ts`, terminado em ponto. Ele
-   * numera ramos como `steps[0].yes.steps[0]`, enquanto a mensagem
-   * do arquivo usa `steps[0].branches.yes[0]` — os dois precisam ser
-   * mantidos em paralelo para a supressão do eco casar dentro de
-   * condições aninhadas.
-   */
   validatePrefix: string,
-  depth: number,
-  counter: { nodes: number },
   catalog: ReferenceCatalog,
   issues: ImportIssue[],
   suppress: Set<string>
-): BuilderStepInput[] {
-  if (depth > IMPORT_LIMITS.maxDepth) {
-    issues.push({
-      path,
-      message: `nesting is deeper than ${IMPORT_LIMITS.maxDepth} levels`,
-      code: 'limit_exceeded',
-    });
-    return [];
-  }
-
-  const out: BuilderStepInput[] = [];
-
-  for (let i = 0; i < raw.length; i++) {
-    const stepPath = `${path}[${i}]`;
-    const validateStepPath = `${validatePrefix}steps[${i}]`;
-
-    if (counter.nodes >= IMPORT_LIMITS.maxStepsPerAutomation) {
-      issues.push({
-        path: stepPath,
-        message: `automation has more than ${IMPORT_LIMITS.maxStepsPerAutomation} steps`,
-        code: 'limit_exceeded',
-      });
-      return out;
-    }
-    counter.nodes++;
-
-    const step = raw[i];
-    if (!isPlainObject(step)) {
-      issues.push({
-        path: stepPath,
-        message: 'step must be an object',
-        code: 'invalid_document',
-      });
-      continue;
-    }
-
-    const stepType = typeof step.step_type === 'string' ? step.step_type : '';
-    if (!STEP_TYPES.has(stepType)) {
-      issues.push({
-        path: `${stepPath}.step_type`,
-        message: stepType
-          ? `unknown step type '${stepType}'`
-          : 'step_type is required',
-        code: 'unknown_type',
-      });
-      continue;
-    }
-
-    const config = isPlainObject(step.step_config)
-      ? { ...step.step_config }
-      : {};
+): void {
+  steps.forEach((step, index) => {
+    const stepPath = path + '[' + index + ']';
+    const validatePath = validatePrefix + 'steps[' + index + ']';
     resolveStepRefs(
-      stepType,
-      config,
-      `${stepPath}.step_config`,
-      validateStepPath,
+      step.step_type,
+      step.step_config,
+      stepPath + '.step_config',
+      validatePath,
       catalog,
       issues,
       suppress
     );
-
-    // `id` é descartado sem aviso: um documento exportado carrega o
-    // id original, e reimportá-lo tem que produzir uma cópia nova,
-    // não um enxerto sobre as linhas de onde veio.
-    const node: BuilderStepInput = { step_type: stepType, step_config: config };
-
-    if (stepType === 'condition') {
-      const branches = isPlainObject(step.branches) ? step.branches : {};
-      const yes = Array.isArray(branches.yes) ? branches.yes : [];
-      const no = Array.isArray(branches.no) ? branches.no : [];
-      node.branches = {
-        yes: normalizeSteps(
-          yes,
-          `${stepPath}.branches.yes`,
-          `${validateStepPath}.yes.`,
-          depth + 1,
-          counter,
-          catalog,
-          issues,
-          suppress
-        ),
-        no: normalizeSteps(
-          no,
-          `${stepPath}.branches.no`,
-          `${validateStepPath}.no.`,
-          depth + 1,
-          counter,
-          catalog,
-          issues,
-          suppress
-        ),
-      };
-    } else if (isPlainObject(step.branches)) {
-      // Os dois `walk` só descem por `branches` quando o passo é
-      // `condition`, então isto sumiria em silêncio na importação.
-      issues.push({
-        path: `${stepPath}.branches`,
-        message: `only 'condition' steps can have branches (this one is '${stepType}')`,
-        code: 'invalid_document',
-      });
+    for (const branch of ['yes', 'no'] as const) {
+      const children = step.branches?.[branch];
+      if (children) resolveStepTree(
+        children, stepPath + '.branches.' + branch, validatePath + '.' + branch + '.',
+        catalog, issues, suppress
+      );
     }
-
-    out.push(node);
-  }
-
-  return out;
+  });
 }
+
 
 // ------------------------------------------------------------
 // Mapa simbólico → UUID
@@ -985,7 +781,3 @@ export async function checkWebhookUrls(
 }
 
 // ------------------------------------------------------------
-
-function isPlainObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v);
-}

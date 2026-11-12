@@ -58,7 +58,7 @@ export function EditorHeader() {
   } = useFlowEditor();
 
   return (
-    <div className="flex flex-col gap-1.5 px-6 pt-5">
+    <div className="flex flex-col gap-1.5 border-b border-border px-3 py-3 sm:px-4">
       <div className="flex flex-wrap items-center gap-3">
         {/* ---- left: back · icon · name · status · edited ---- */}
         <button
@@ -70,7 +70,7 @@ export function EditorHeader() {
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-soft text-primary">
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-border bg-accent text-accent-foreground">
           <Workflow className="h-[18px] w-[18px]" />
         </span>
         <input
@@ -79,12 +79,12 @@ export function EditorHeader() {
           placeholder="Flow name"
           spellCheck={false}
           aria-label="Flow name"
-          className="min-w-[120px] max-w-[340px] rounded-lg border border-transparent bg-transparent px-2 py-1 text-lg font-bold leading-tight tracking-tight text-foreground outline-none transition-colors hover:bg-muted focus:border-primary focus:bg-transparent focus:shadow-[0_0_0_3px_var(--primary-soft)]"
+          className="min-w-[110px] max-w-full flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1 font-serif text-lg leading-tight text-foreground outline-none transition-colors hover:bg-muted focus:border-primary focus:bg-transparent focus:shadow-[0_0_0_3px_var(--primary-soft)] sm:max-w-[340px]"
         />
         <StatusChip status={state.status} />
         {dirty && (
           <span
-            className="inline-flex shrink-0 items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-amber-300"
+            className="inline-flex shrink-0 items-center gap-1.5 text-[10px] font-medium uppercase tracking-wide text-amber-800 dark:text-amber-300"
             title="Unsaved changes — hit Save to persist"
             aria-live="polite"
           >
@@ -110,7 +110,7 @@ export function EditorHeader() {
             variant="ghost"
             size="sm"
             onClick={() => void deleteFlow()}
-            className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
+            className="text-red-700 dark:text-red-300 hover:bg-red-500/10 hover:text-red-800 dark:hover:text-red-200"
           >
             <Trash2 className="h-3.5 w-3.5" />
             Delete
@@ -168,7 +168,7 @@ export function EditorHeader() {
         }
         placeholder="Add a short description (internal — customers don't see this)"
         aria-label="Flow description"
-        className="w-full max-w-[78ch] rounded-md border border-transparent bg-transparent px-2 py-1 text-[13px] text-muted-foreground outline-none transition-colors placeholder:text-muted-foreground/60 hover:bg-muted/50 focus:border-primary focus:bg-transparent focus:text-foreground"
+        className="w-full max-w-[78ch] rounded-md border border-transparent bg-transparent px-2 py-1 text-[13px] text-muted-foreground outline-none transition-colors placeholder:text-muted-foreground hover:bg-muted/50 focus:border-primary focus:bg-transparent focus:text-foreground"
       />
     </div>
   );
@@ -183,7 +183,7 @@ function StatusChip({ status }: { status: BuilderState["status"] }) {
       label: "Draft",
     },
     active: {
-      cls: "border-emerald-600/40 bg-emerald-500/10 text-emerald-300",
+      cls: "border-emerald-600/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300",
       label: "Active",
     },
     archived: {

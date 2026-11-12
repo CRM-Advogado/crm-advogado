@@ -11,7 +11,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { CheckCircle, ArrowLeft } from "lucide-react";
 
@@ -51,15 +50,15 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <Card className="w-full max-w-md border-border bg-card">
+      <div className="relative z-10 flex flex-1 items-center justify-center px-4 py-8">
+        <Card className="crm-enter w-full max-w-md border-border bg-card px-1 py-7 shadow-xl shadow-black/10 sm:px-4">
           <CardHeader className="items-center text-center">
-            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
               <CheckCircle className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle className="text-xl text-foreground">
+            <h1 className="crm-title text-3xl text-foreground">
               Check your email
-            </CardTitle>
+            </h1>
             <CardDescription className="text-muted-foreground">
               We&apos;ve sent a password reset link to{" "}
               <span className="text-foreground">{email}</span>. Please check your
@@ -82,12 +81,11 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md border-border bg-card">
+    <div className="relative z-10 flex flex-1 items-center justify-center px-4 py-8">
+      <Card className="crm-enter w-full max-w-md border-border bg-card px-1 py-7 shadow-xl shadow-black/10 sm:px-4">
         <CardHeader className="items-center text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo.svg" alt="" className="mb-2 h-12 w-12" />
-          <CardTitle className="text-xl text-foreground">Reset password</CardTitle>
+          <span className="crm-mark mx-auto mb-3" aria-hidden="true">c</span>
+          <h1 className="crm-title text-3xl text-foreground">Reset password</h1>
           <CardDescription className="text-muted-foreground">
             Enter your email and we&apos;ll send you a reset link
           </CardDescription>
@@ -95,7 +93,7 @@ export default function ForgotPasswordPage() {
         <CardContent>
           <form onSubmit={handleReset} className="flex flex-col gap-4">
             {error && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-destructive">
                 {error}
               </div>
             )}
@@ -111,7 +109,7 @@ export default function ForgotPasswordPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
+                className="border-input bg-card text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
               />
             </div>
 

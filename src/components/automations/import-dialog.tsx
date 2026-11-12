@@ -171,7 +171,7 @@ export function ImportAutomationsDialog({
 
         {issues.length > 0 && (
           <div className="max-h-64 overflow-y-auto rounded-lg border border-red-500/30 bg-red-500/5 p-3">
-            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-red-400">
+            <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold text-red-700 dark:text-red-300">
               <AlertTriangle className="size-3.5" />
               {t("issuesTitle", { count: issues.length })}
             </p>
@@ -231,7 +231,7 @@ export function ImportAutomationsDialog({
             no WhatsApp de clientes. Avisar antes é mais barato que
             desfazer depois. */}
         {activeCount > 0 && (
-          <p className="flex items-start gap-1.5 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+          <p className="flex items-start gap-1.5 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
             <AlertTriangle className="mt-0.5 size-3.5 flex-shrink-0" />
             {t("activeWarning", { count: activeCount })}
           </p>

@@ -189,6 +189,12 @@ export async function runAutomationsForTrigger(
     }
     if (!automations || automations.length === 0) return;
 
+    await validateConversationContext(
+      input.accountId,
+      input.contactId,
+      input.context
+    );
+
     for (const automation of automations as Automation[]) {
       if (!triggerMatches(automation, input.context)) continue;
       try {
@@ -211,9 +217,7 @@ export async function resumePendingExecution(pending: {
   automation_id: string;
   /** Audit-only; the automation row carries account_id for tenancy. */
   user_id: string;
-  /** Account-scoped lookups read from the automation row, so this
-   *  field is just here to mirror the row shape and keep the cron's
-   *  pass-through self-documenting. */
+  /** The automation and the pending execution must belong to the same account. */
   account_id: string;
   contact_id: string | null;
   log_id: string | null;
@@ -227,6 +231,7 @@ export async function resumePendingExecution(pending: {
     .from('automations')
     .select('*')
     .eq('id', pending.automation_id)
+    .eq('account_id', pending.account_id)
     .single();
 
   if (error || !automation) {
@@ -235,25 +240,31 @@ export async function resumePendingExecution(pending: {
       pending.automation_id,
       error
     );
-    await markPending(pending.id, 'failed');
+    await markPending(pending.id, pending.account_id, 'failed');
     return;
   }
 
   try {
+    const context = pending.context ?? {};
+    await validateConversationContext(
+      pending.account_id,
+      pending.contact_id,
+      context
+    );
     await executeStepsFrom({
       automation: automation as Automation,
       contactId: pending.contact_id,
-      context: pending.context ?? {},
+      context,
       parentStepId: pending.parent_step_id,
       branch: pending.branch,
       startPosition: pending.next_step_position,
       logId: pending.log_id,
       triggerEvent: 'resumed_wait',
     });
-    await markPending(pending.id, 'done');
+    await markPending(pending.id, pending.account_id, 'done');
   } catch (err) {
     console.error('[automations] resume failed:', err);
-    await markPending(pending.id, 'failed');
+    await markPending(pending.id, pending.account_id, 'failed');
   }
 }
 
@@ -1130,10 +1141,36 @@ async function runStep(
 // ------------------------------------------------------------
 
 /**
+ * Validate webhook, manual trigger and persisted wait context before any
+ * automation effect. An explicit ID must never fall back to another thread.
+ */
+async function validateConversationContext(
+  accountId: string,
+  contactId: string | null | undefined,
+  context: AutomationContext | undefined
+): Promise<void> {
+  const conversationId = context?.conversation_id;
+  if (conversationId === undefined) return;
+  if (typeof conversationId !== 'string' || !conversationId || !contactId) {
+    throw new Error('invalid automation conversation context');
+  }
+
+  const { data, error } = await supabaseAdmin()
+    .from('conversations')
+    .select('id')
+    .eq('id', conversationId)
+    .eq('account_id', accountId)
+    .eq('contact_id', contactId)
+    .maybeSingle();
+  if (error || !data?.id) {
+    throw new Error('invalid automation conversation context');
+  }
+}
+
+/**
  * Pick the conversation a send-type step should use. Prefer the id the
- * webhook handed us (it's the one that just got the inbound message);
- * fall back to the contact's conversation for resumed/wait paths and
- * manual engine POSTs. Throws if none exists — send steps have
+ * dispatch or resume validated. If the context has no ID, look up the
+ * contact's conversation. Throws if none exists — send steps have
  * no meaningful target without a conversation.
  */
 async function resolveConversationId(args: ExecuteArgs): Promise<string> {
@@ -1477,9 +1514,14 @@ async function finalizeLog(
     .eq('id', logId);
 }
 
-async function markPending(id: string, status: 'done' | 'failed') {
+async function markPending(
+  id: string,
+  accountId: string,
+  status: 'done' | 'failed'
+) {
   await supabaseAdmin()
     .from('automation_pending_executions')
     .update({ status })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('account_id', accountId);
 }

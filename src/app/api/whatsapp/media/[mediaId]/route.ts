@@ -1,10 +1,15 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { getMediaUrl, downloadMedia } from '@/lib/whatsapp/meta-api'
+import { ForbiddenError, requireRole, toErrorResponse, UnauthorizedError } from '@/lib/auth/account'
+import { externalId } from '@/lib/whatsapp/providers/domain'
+import { resolveLegacyMetaProvider } from '@/lib/whatsapp/providers/legacy-meta-connection'
 import { decrypt } from '@/lib/whatsapp/encryption'
 
+const MAX_CONCURRENT_DOWNLOADS_PER_ACCOUNT = 2
+// Each worker instance limits the downloads it is buffering for this account.
+const activeDownloads = new Map<string, number>()
+
 export async function GET(
-  request: Request,
+  _request: Request,
   { params }: { params: Promise<{ mediaId: string }> }
 ) {
   try {
@@ -17,36 +22,7 @@ export async function GET(
       )
     }
 
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    // Resolve the caller's account_id — whatsapp_config is one-per-
-    // account post-multi-user, so a teammate fetching media for a
-    // conversation in the shared inbox needs the account's config,
-    // not their personal (non-existent) row.
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('account_id')
-      .eq('user_id', user.id)
-      .maybeSingle()
-    const accountId = profile?.account_id as string | undefined
-    if (!accountId) {
-      return NextResponse.json(
-        { error: 'Your profile is not linked to an account.' },
-        { status: 403 },
-      )
-    }
+    const { supabase, accountId } = await requireRole('viewer')
 
     // Authorize: this mediaId must belong to a message the caller can
     // already see. The webhook stores inbound media as
@@ -88,25 +64,38 @@ export async function GET(
       )
     }
 
-    const accessToken = decrypt(config.access_token)
+    const provider = resolveLegacyMetaProvider(accountId, config, decrypt(config.access_token))
+    if (!provider.media) throw new Error('WhatsApp media download unavailable')
 
-    // Get the download URL from Meta
-    const mediaInfo = await getMediaUrl({ mediaId, accessToken })
+    const active = activeDownloads.get(accountId) ?? 0
+    if (active >= MAX_CONCURRENT_DOWNLOADS_PER_ACCOUNT) {
+      return NextResponse.json(
+        { error: 'Too many concurrent media downloads' },
+        { status: 429, headers: { 'Retry-After': '1', 'Cache-Control': 'private, no-store' } },
+      )
+    }
 
-    // Download the binary data
-    const { buffer, contentType } = await downloadMedia({
-      downloadUrl: mediaInfo.url,
-      accessToken,
-    })
+    activeDownloads.set(accountId, active + 1)
+    try {
+      const reference = externalId(provider.connection, mediaId)
+      const { bytes, contentType } = await provider.media.retrieve(reference)
 
-    return new Response(new Uint8Array(buffer), {
-      status: 200,
-      headers: {
-        'Content-Type': contentType || mediaInfo.mimeType || 'application/octet-stream',
-        'Cache-Control': 'public, max-age=86400',
-      },
-    })
+      return new Response(new Uint8Array(bytes), {
+        status: 200,
+        headers: {
+          'Content-Type': contentType,
+          'Cache-Control': 'private, no-store',
+        },
+      })
+    } finally {
+      const remaining = (activeDownloads.get(accountId) ?? 1) - 1
+      if (remaining === 0) activeDownloads.delete(accountId)
+      else activeDownloads.set(accountId, remaining)
+    }
   } catch (error) {
+    if (error instanceof UnauthorizedError || error instanceof ForbiddenError) {
+      return toErrorResponse(error)
+    }
     console.error('Error in WhatsApp media GET:', error)
     return NextResponse.json(
       { error: 'Failed to fetch media' },

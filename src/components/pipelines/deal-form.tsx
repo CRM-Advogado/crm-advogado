@@ -491,7 +491,7 @@ export function DealForm({
             {deal &&
               (confirmDelete ? (
                 <div className="mt-3 flex items-center justify-between gap-2 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs">
-                  <span className="text-red-300">{t('deletePrompt')}</span>
+                  <span className="text-destructive">{t('deletePrompt')}</span>
                   <div className="flex gap-1">
                     <button
                       type="button"
@@ -515,7 +515,7 @@ export function DealForm({
                 <button
                   type="button"
                   onClick={() => setConfirmDelete(true)}
-                  className="mt-3 flex w-full items-center justify-center gap-1 text-xs text-red-400 hover:text-red-300"
+                  className="mt-3 flex w-full items-center justify-center gap-1 text-xs text-destructive hover:text-red-900 dark:hover:text-red-200"
                 >
                   <Trash2 className="h-3 w-3" />
                   {t('deleteDeal')}

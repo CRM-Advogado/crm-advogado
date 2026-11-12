@@ -634,7 +634,7 @@ export function ContactDetailView({
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-muted-foreground text-xs">
-                        {t('phone')} <span className="text-red-400">*</span>
+                        {t('phone')} <span className="text-destructive">*</span>
                       </Label>
                       <Input
                         value={editPhone}
@@ -788,17 +788,15 @@ export function ContactDetailView({
                               key={tag.id}
                               onClick={() => toggleTag(tag.id)}
                               disabled={savingTags}
-                              className={`inline-flex cursor-pointer items-center rounded-full px-3 py-1 text-xs font-medium transition-all ${
+                              aria-pressed={selected}
+                              className={`inline-flex cursor-pointer items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                                 selected
-                                  ? 'ring-primary ring-offset-border ring-2 ring-offset-1'
-                                  : 'opacity-50 hover:opacity-80'
+                                  ? 'border-primary/50 bg-accent text-accent-foreground'
+                                  : 'border-border bg-card text-foreground hover:bg-muted'
                               }`}
-                              style={{
-                                backgroundColor: tag.color + '20',
-                                color: tag.color,
-                              }}
                             >
-                              {selected && <Check className="mr-1 size-3" />}
+                              <span aria-hidden className="size-2 shrink-0 rounded-full border" style={{ backgroundColor: tag.color }} />
+                              {selected && <Check aria-hidden className="size-3" />}
                               {tag.name}
                             </button>
                           );
@@ -856,7 +854,7 @@ export function ContactDetailView({
                             </p>
                             <button
                               onClick={() => deleteNote(note.id)}
-                              className="text-muted-foreground shrink-0 cursor-pointer opacity-0 transition-all group-hover:opacity-100 hover:text-red-400"
+                              className="text-muted-foreground shrink-0 cursor-pointer opacity-0 transition-all group-hover:opacity-100 hover:text-destructive"
                             >
                               <Trash2 className="size-3.5" />
                             </button>
@@ -957,12 +955,9 @@ export function ContactDetailView({
                             </p>
                             {deal.stage && (
                               <span
-                                className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-                                style={{
-                                  backgroundColor: `${deal.stage.color}20`,
-                                  color: deal.stage.color,
-                                }}
+                                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-card px-1.5 py-0.5 text-[10px] font-medium text-foreground"
                               >
+                                <span aria-hidden className="size-2 shrink-0 rounded-full border" style={{ backgroundColor: deal.stage.color }} />
                                 {deal.stage.name}
                               </span>
                             )}
@@ -980,7 +975,7 @@ export function ContactDetailView({
                                 className={
                                   deal.status === 'won'
                                     ? 'text-primary'
-                                    : 'text-red-400'
+                                    : 'text-destructive'
                                 }
                               >
                                 {deal.status}
@@ -1023,7 +1018,7 @@ export function ContactDetailView({
                                 doc.status === 'signed'
                                   ? 'text-primary shrink-0 text-[10px] font-medium'
                                   : doc.status === 'refused'
-                                    ? 'shrink-0 text-[10px] font-medium text-red-400'
+                                    ? 'shrink-0 text-[10px] font-medium text-destructive'
                                     : 'text-muted-foreground shrink-0 text-[10px] font-medium'
                               }
                             >
